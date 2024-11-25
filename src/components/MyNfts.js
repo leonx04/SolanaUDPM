@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { apiKey } from '../api';
+import { Modal, Button, Alert, ProgressBar } from 'react-bootstrap';
 
 const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [resultMessage, setResultMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -17,9 +22,22 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
   const [preview, setPreview] = useState(null);
   const [formErrors, setFormErrors] = useState({});
 
-  // Cloudinary configuration
   const CLOUDINARY_UPLOAD_PRESET = 'ARTSOLANA';
   const CLOUDINARY_CLOUD_NAME = 'dy3nmkszo';
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      image: null,
+      attributeName: '',
+      attributeValue: ''
+    });
+    setPreview(null);
+    setFormErrors({});
+    setError(null);
+    setUploadProgress(0);
+  };
 
   const validateForm = () => {
     const errors = {};
@@ -112,20 +130,13 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Cloudinary error details:', errorData);
         throw new Error(errorData.error?.message || 'Upload failed');
       }
 
       const data = await response.json();
-      console.log('Cloudinary upload success:', data);
       return data.secure_url;
     } catch (err) {
       console.error('Error uploading to Cloudinary:', err);
-      if (err.message.includes('upload_preset')) {
-        throw new Error('Lỗi cấu hình upload preset. Vui lòng kiểm tra lại.');
-      } else if (err.message.includes('api_key')) {
-        throw new Error('Lỗi xác thực API key. Vui lòng kiểm tra lại.');
-      }
       throw new Error('Không thể tải lên hình ảnh. Vui lòng thử lại. Chi tiết: ' + err.message);
     }
   };
@@ -143,7 +154,6 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
     setUploadProgress(0);
 
     try {
-      // Upload image to Cloudinary with progress tracking
       setUploadProgress(10);
       const imageUrl = await uploadImageToCloudinary(formData.image);
       setUploadProgress(50);
@@ -190,15 +200,10 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
       setUploadProgress(100);
       const data = await response.json();
       
-      // Reset form
-      setFormData({
-        name: '',
-        description: '',
-        image: null,
-        attributeName: '',
-        attributeValue: ''
-      });
-      setPreview(null);
+      setIsSuccess(true);
+      setResultMessage("Tạo sản phẩm thành công!");
+      resetForm();
+      setShowModal(false);
 
       if (onSuccess) {
         onSuccess(data);
@@ -206,161 +211,172 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
 
     } catch (err) {
       console.error('Error creating product:', err);
-      setError(err.message || "Không thể tạo sản phẩm. Vui lòng thử lại sau");
+      setIsSuccess(false);
+      setResultMessage(err.message || "Không thể tạo sản phẩm. Vui lòng thử lại sau");
     } finally {
       setIsSubmitting(false);
-      setTimeout(() => setUploadProgress(0), 1000); // Reset progress after a delay
+      setShowResultModal(true);
+      setTimeout(() => setUploadProgress(0), 1000);
     }
   };
 
+  const handleClose = () => {
+    setShowModal(false);
+    resetForm();
+  };
+
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          <div className="card shadow">
-            <div className="card-header">
-              <h5 className="card-title mb-0">Tạo Sản Phẩm Mới</h5>
-            </div>
-            <div className="card-body">
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  {error}
-                </div>
+    <>
+      <Button variant="primary" onClick={() => setShowModal(true)}>
+        Tạo Sản Phẩm Mới
+      </Button>
+
+      {/* Create Product Modal */}
+      <Modal show={showModal} onHide={handleClose} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Tạo Sản Phẩm Mới</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {error && (
+            <Alert variant="danger" className="mb-3">
+              {error}
+            </Alert>
+          )}
+          
+          <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+              <label className="form-label">Tên sản phẩm</label>
+              <input 
+                type="text" 
+                className={`form-control ${formErrors.name ? 'is-invalid' : ''}`}
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Nhập tên sản phẩm"
+                disabled={isSubmitting}
+                maxLength={32}
+              />
+              {formErrors.name && (
+                <div className="invalid-feedback">{formErrors.name}</div>
               )}
-              
-              <form onSubmit={handleSubmit}>
-                {/* Form fields remain the same */}
-                <div className="mb-3">
-                  <label className="form-label">Tên sản phẩm</label>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Mô tả</label>
+              <textarea 
+                className={`form-control ${formErrors.description ? 'is-invalid' : ''}`}
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows="3"
+                placeholder="Mô tả về sản phẩm"
+                disabled={isSubmitting}
+                maxLength={64}
+              />
+              {formErrors.description && (
+                <div className="invalid-feedback">{formErrors.description}</div>
+              )}
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Hình ảnh</label>
+              <div className="d-flex gap-3 align-items-start">
+                <div className="flex-grow-1">
                   <input 
-                    type="text" 
-                    className={`form-control ${formErrors.name ? 'is-invalid' : ''}`}
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Nhập tên sản phẩm"
+                    type="file" 
+                    className={`form-control ${formErrors.image ? 'is-invalid' : ''}`}
+                    accept="image/*"
+                    onChange={handleImageChange}
                     disabled={isSubmitting}
-                    maxLength={32}
                   />
-                  {formErrors.name && (
-                    <div className="invalid-feedback">{formErrors.name}</div>
+                  {formErrors.image && (
+                    <div className="invalid-feedback">{formErrors.image}</div>
                   )}
+                  <small className="text-muted d-block mt-1">
+                    Hỗ trợ: JPG, PNG, GIF (Max: 5MB)
+                  </small>
                 </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Mô tả</label>
-                  <textarea 
-                    className={`form-control ${formErrors.description ? 'is-invalid' : ''}`}
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows="3"
-                    placeholder="Mô tả về sản phẩm"
-                    disabled={isSubmitting}
-                    maxLength={64}
-                  />
-                  {formErrors.description && (
-                    <div className="invalid-feedback">{formErrors.description}</div>
-                  )}
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Hình ảnh</label>
-                  <div className="d-flex gap-3 align-items-start">
-                    <div className="flex-grow-1">
-                      <input 
-                        type="file" 
-                        className={`form-control ${formErrors.image ? 'is-invalid' : ''}`}
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        disabled={isSubmitting}
-                      />
-                      {formErrors.image && (
-                        <div className="invalid-feedback">{formErrors.image}</div>
-                      )}
-                      <small className="text-muted d-block mt-1">
-                        Hỗ trợ: JPG, PNG, GIF (Max: 5MB)
-                      </small>
-                    </div>
-                    {preview && (
-                      <div style={{ width: '100px', height: '100px' }}>
-                        <img 
-                          src={preview} 
-                          alt="Preview" 
-                          className="img-thumbnail"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label">Tên thuộc tính (không bắt buộc)</label>
-                    <input 
-                      type="text" 
-                      className="form-control"
-                      name="attributeName"
-                      value={formData.attributeName}
-                      onChange={handleInputChange}
-                      placeholder="Tên thuộc tính"
-                      disabled={isSubmitting}
+                {preview && (
+                  <div style={{ width: '100px', height: '100px' }}>
+                    <img 
+                      src={preview} 
+                      alt="Preview" 
+                      className="img-thumbnail"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">Giá trị thuộc tính</label>
-                    <input 
-                      type="text" 
-                      className="form-control"
-                      name="attributeValue"
-                      value={formData.attributeValue}
-                      onChange={handleInputChange}
-                      placeholder="Giá trị thuộc tính"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                </div>
-
-                {uploadProgress > 0 && (
-                  <div className="mb-3">
-                    <div className="progress">
-                      <div 
-                        className="progress-bar" 
-                        role="progressbar" 
-                        style={{ width: `${uploadProgress}%` }}
-                        aria-valuenow={uploadProgress} 
-                        aria-valuemin="0" 
-                        aria-valuemax="100"
-                      >
-                        {uploadProgress}%
-                      </div>
-                    </div>
                   </div>
                 )}
-
-                <div className="text-end">
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Đang tạo...
-                      </>
-                    ) : (
-                      'Tạo sản phẩm'
-                    )}
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
+
+            <div className="row mb-3">
+              <div className="col-md-6">
+                <label className="form-label">Tên thuộc tính (không bắt buộc)</label>
+                <input 
+                  type="text" 
+                  className="form-control"
+                  name="attributeName"
+                  value={formData.attributeName}
+                  onChange={handleInputChange}
+                  placeholder="Tên thuộc tính"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Giá trị thuộc tính</label>
+                <input 
+                  type="text" 
+                  className="form-control"
+                  name="attributeValue"
+                  value={formData.attributeValue}
+                  onChange={handleInputChange}
+                  placeholder="Giá trị thuộc tính"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            {uploadProgress > 0 && (
+              <div className="mb-3">
+                <ProgressBar now={uploadProgress} label={`${uploadProgress}%`} />
+              </div>
+            )}
+          </form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
+            Hủy
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Đang tạo...
+              </>
+            ) : (
+              'Tạo sản phẩm'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Result Modal */}
+      <Modal show={showResultModal} onHide={() => setShowResultModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>{isSuccess ? 'Thành công' : 'Lỗi'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant={isSuccess ? 'success' : 'danger'}>
+            {resultMessage}
+          </Alert>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => setShowResultModal(false)}>
+            Đóng
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 };
 
