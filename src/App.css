@@ -219,3 +219,176 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* App container và Dashboard */
+.app-container {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.dashboard-container {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Sidebar styles */
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background-color: #1a1a1a;
+  color: white;
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+/* Main content area */
+.main-content {
+  flex: 1;
+  margin-left: 280px;
+  min-width: 0; /* Quan trọng để tránh overflow */
+  transition: margin-left 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content.expanded {
+  margin-left: 0;
+}
+
+/* Top navigation */
+.top-nav {
+  height: 60px;
+  padding: 0 1rem;
+  background: white;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+}
+
+/* Content area */
+.content-area {
+  padding: 1.5rem;
+  flex: 1;
+  overflow-x: hidden;
+  min-width: 0; /* Quan trọng để tránh overflow */
+}
+
+/* Card và Table container */
+.card {
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0;
+  padding: 0;
+}
+
+/* Table styles */
+.mobile-table-wrapper {
+  min-width: 800px; /* Minimum width for table content */
+}
+
+/* Responsive Overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* Custom scrollbar for better UX */
+.table-responsive::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Modal responsiveness */
+.modal-dialog {
+  max-width: 95%;
+  margin: 1.75rem auto;
+}
+
+@media (min-width: 576px) {
+  .modal-dialog {
+    max-width: 500px;
+  }
+}
+
+@media (min-width: 992px) {
+  .modal-dialog.modal-lg {
+    max-width: 800px;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar:not(.closed) {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .content-area {
+    padding: 1rem;
+  }
+
+  /* Ensure modals don't overflow on mobile */
+  .modal-body {
+    padding: 1rem;
+    max-height: calc(100vh - 210px);
+    overflow-y: auto;
+  }
+}

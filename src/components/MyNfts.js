@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiKey } from '../api';
 import { Modal, Button, Alert, ProgressBar } from 'react-bootstrap';
+import ItemsTable from './ItemsTable';
 
 const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
   const [showModal, setShowModal] = useState(false);
@@ -226,10 +227,18 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
   };
 
   return (
-    <>
-      <Button variant="primary" onClick={() => setShowModal(true)}>
-        Tạo Sản Phẩm Mới
-      </Button>
+    <div>
+      {/* Phần tạo sản phẩm */}
+      <div className="mb-4">
+        <Button variant="primary" onClick={() => setShowModal(true)}>
+          Tạo Sản Phẩm Mới
+        </Button>
+      </div>
+
+      {/* Phần bảng hiển thị sản phẩm */}
+      <div className="mt-4">
+        <ItemsTable ownerReferenceId={referenceId} />
+      </div>
 
       {/* Create Product Modal */}
       <Modal show={showModal} onHide={handleClose} size="lg">
@@ -376,7 +385,7 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
           </Button>
         </Modal.Footer>
       </Modal>
-    </>
+    </div>
   );
 };
 
