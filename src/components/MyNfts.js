@@ -1,112 +1,132 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { apiKey } from '../api';
 
-const MyNfts = ({ referenceId }) => {
-  const [myNfts, setMyNfts] = useState([]);
-  const [loading, setLoading] = useState(false);
+const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 3;
-
-  // Form state for new NFT
-  const [newNft, setNewNft] = useState({
+  const [uploadProgress, setUploadProgress] = useState(0);
+  
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
-    price: '',
-    image: null
+    image: null,
+    attributeName: '',
+    attributeValue: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [preview, setPreview] = useState(null);
   const [formErrors, setFormErrors] = useState({});
 
-  const validateReferenceId = (id) => {
-    return typeof id === 'string' && id.length > 0;
-  };
-
-  const fetchMyNfts = async () => {
-    if (!validateReferenceId(referenceId)) {
-      setError("ID tham chiếu không hợp lệ");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(`https://api.gameshift.dev/nx/nfts/${referenceId}`, {
-        headers: {
-          "accept": "application/json",
-          "content-type": "application/json",
-          "x-api-key": apiKey,
-        },
-        timeout: 5000, // 5 second timeout
-      });
-
-      if (response.status === 200 && Array.isArray(response.data)) {
-        setMyNfts(response.data);
-      } else {
-        throw new Error("Dữ liệu không đúng định dạng");
-      }
-    } catch (err) {
-      const errorMessage = getErrorMessage(err);
-      setError(errorMessage);
-      
-      // Implement retry logic
-      if (retryCount < maxRetries && shouldRetry(err)) {
-        setRetryCount(prev => prev + 1);
-        setTimeout(fetchMyNfts, 1000 * (retryCount + 1)); // Exponential backoff
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getErrorMessage = (error) => {
-    if (error.response) {
-      switch (error.response.status) {
-        case 404:
-          return "Không tìm thấy dữ liệu NFT cho tài khoản này";
-        case 401:
-          return "Không có quyền truy cập. Vui lòng đăng nhập lại";
-        case 403:
-          return "Không có quyền xem NFT này";
-        default:
-          return "Có lỗi xảy ra khi tải dữ liệu NFT";
-      }
-    }
-    if (error.code === 'ECONNABORTED') {
-      return "Kết nối đến máy chủ quá chậm. Vui lòng thử lại";
-    }
-    return "Không thể tải dữ liệu NFT. Vui lòng thử lại sau";
-  };
-
-  const shouldRetry = (error) => {
-    return error.response?.status === 404 || 
-           error.code === 'ECONNABORTED' ||
-           !error.response;
-  };
+  // Cloudinary configuration
+  const CLOUDINARY_UPLOAD_PRESET = 'ARTSOLANA';
+  const CLOUDINARY_CLOUD_NAME = 'dy3nmkszo';
 
   const validateForm = () => {
     const errors = {};
-    if (!newNft.name.trim()) errors.name = "Tên NFT là bắt buộc";
-    if (!newNft.description.trim()) errors.description = "Mô tả là bắt buộc";
-    if (!newNft.price || newNft.price <= 0) errors.price = "Giá phải lớn hơn 0";
-    if (!newNft.image) errors.image = "Hình ảnh là bắt buộc";
+    if (!formData.name.trim()) {
+      errors.name = "Tên sản phẩm là bắt buộc";
+    } else if (formData.name.length > 32) {
+      errors.name = "Tên không được vượt quá 32 ký tự";
+    }
+
+    if (!formData.description.trim()) {
+      errors.description = "Mô tả là bắt buộc";
+    } else if (formData.description.length > 64) {
+      errors.description = "Mô tả không được vượt quá 64 ký tự";
+    }
+
+    if (!formData.image) {
+      errors.image = "Hình ảnh là bắt buộc";
+    }
+
     return errors;
   };
 
   const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    setNewNft(prev => ({
+    const { name, value } = e.target;
+    setFormData(prev => ({
       ...prev,
-      [name]: type === 'file' ? files[0] : value
+      [name]: value
     }));
-    // Clear error when user types
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
         [name]: null
       }));
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setFormErrors(prev => ({
+          ...prev,
+          image: "Kích thước file không được vượt quá 5MB"
+        }));
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        setFormErrors(prev => ({
+          ...prev,
+          image: "Vui lòng chọn file hình ảnh"
+        }));
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        image: file
+      }));
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      if (formErrors.image) {
+        setFormErrors(prev => ({
+          ...prev,
+          image: null
+        }));
+      }
+    }
+  };
+
+  const uploadImageToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('api_key', process.env.REACT_APP_CLOUDINARY_API_KEY);
+
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Cloudinary error details:', errorData);
+        throw new Error(errorData.error?.message || 'Upload failed');
+      }
+
+      const data = await response.json();
+      console.log('Cloudinary upload success:', data);
+      return data.secure_url;
+    } catch (err) {
+      console.error('Error uploading to Cloudinary:', err);
+      if (err.message.includes('upload_preset')) {
+        throw new Error('Lỗi cấu hình upload preset. Vui lòng kiểm tra lại.');
+      } else if (err.message.includes('api_key')) {
+        throw new Error('Lỗi xác thực API key. Vui lòng kiểm tra lại.');
+      }
+      throw new Error('Không thể tải lên hình ảnh. Vui lòng thử lại. Chi tiết: ' + err.message);
     }
   };
 
@@ -119,260 +139,224 @@ const MyNfts = ({ referenceId }) => {
     }
 
     setIsSubmitting(true);
+    setError(null);
+    setUploadProgress(0);
+
     try {
-      // TODO: Implement NFT creation logic here
-      // Reset form after successful submission
-      setNewNft({
+      // Upload image to Cloudinary with progress tracking
+      setUploadProgress(10);
+      const imageUrl = await uploadImageToCloudinary(formData.image);
+      setUploadProgress(50);
+
+      if (!imageUrl) {
+        throw new Error('Không nhận được URL hình ảnh từ Cloudinary');
+      }
+
+      const payload = {
+        details: {
+          collectionId: collectionId,
+          name: formData.name,
+          description: formData.description,
+          imageUrl: imageUrl,
+          attributes: []
+        },
+        destinationUserReferenceId: referenceId
+      };
+
+      if (formData.attributeName && formData.attributeValue) {
+        payload.details.attributes.push({
+          traitType: formData.attributeName,
+          value: formData.attributeValue
+        });
+      }
+
+      setUploadProgress(75);
+      
+      const response = await fetch('https://api.gameshift.dev/nx/unique-assets', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'content-type': 'application/json',
+          'x-api-key': apiKey
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      setUploadProgress(100);
+      const data = await response.json();
+      
+      // Reset form
+      setFormData({
         name: '',
         description: '',
-        price: '',
-        image: null
+        image: null,
+        attributeName: '',
+        attributeValue: ''
       });
-      document.getElementById('createNftModal').classList.remove('show');
-      document.body.classList.remove('modal-open');
-      document.querySelector('.modal-backdrop')?.remove();
+      setPreview(null);
+
+      if (onSuccess) {
+        onSuccess(data);
+      }
+
     } catch (err) {
-      setError("Không thể tạo NFT. Vui lòng thử lại sau");
+      console.error('Error creating product:', err);
+      setError(err.message || "Không thể tạo sản phẩm. Vui lòng thử lại sau");
     } finally {
       setIsSubmitting(false);
+      setTimeout(() => setUploadProgress(0), 1000); // Reset progress after a delay
     }
   };
-
-  const handleRetry = () => {
-    setRetryCount(0);
-    fetchMyNfts();
-  };
-
-  useEffect(() => {
-    if (referenceId) {
-      fetchMyNfts();
-    }
-  }, [referenceId]);
-
-  if (loading) {
-    return (
-      <div className="container mt-5">
-        <div className="row justify-content-center">
-          <div className="col-12 text-center">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Đang tải...</span>
-            </div>
-            <p className="mt-3 text-muted">
-              Đang tải NFT của bạn{retryCount > 0 ? ` (Lần thử ${retryCount}/${maxRetries})` : ''}...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mt-5">
-        <div className="row justify-content-center">
-          <div className="col-12">
-            <div className="alert alert-danger" role="alert">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                  {error}
-                </div>
-                {retryCount < maxRetries && (
-                  <button 
-                    className="btn btn-outline-danger btn-sm"
-                    onClick={handleRetry}
-                  >
-                    <i className="bi bi-arrow-clockwise me-2"></i>
-                    Thử lại
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mt-4">
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="d-flex justify-content-between align-items-center">
-            <h2 className="mb-0">Bộ sưu tập NFT của tôi</h2>
-            <button 
-              className="btn btn-primary" 
-              data-bs-toggle="modal" 
-              data-bs-target="#createNftModal"
-              disabled={isSubmitting}
-            >
-              <i className="bi bi-plus-lg me-2"></i>
-              Đăng bán NFT mới
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {myNfts && myNfts.length > 0 ? (
-        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
-          {myNfts.map((nft) => (
-            <div key={nft.id} className="col">
-              <div className="card h-100 shadow-sm hover-shadow">
-                <div className="position-relative">
-                  <img 
-                    src={nft.image || "/api/placeholder/400/400"} 
-                    className="card-img-top" 
-                    alt={nft.name}
-                    style={{ height: '200px', objectFit: 'cover' }}
-                    onError={(e) => {
-                      e.target.src = "/api/placeholder/400/400";
-                    }}
-                  />
-                  <div className="position-absolute top-0 end-0 m-2">
-                    <span className="badge bg-primary">
-                      {nft.price} SOL
-                    </span>
-                  </div>
-                </div>
-                <div className="card-body">
-                  <h5 className="card-title text-truncate">{nft.name}</h5>
-                  <p className="card-text small text-muted">
-                    {nft.description || 'Không có mô tả'}
-                  </p>
-                </div>
-                <div className="card-footer bg-transparent border-top-0">
-                  <div className="d-grid gap-2">
-                    <button className="btn btn-outline-primary btn-sm">
-                      Xem chi tiết
-                    </button>
-                  </div>
-                </div>
-              </div>
+      <div className="row justify-content-center">
+        <div className="col-md-8">
+          <div className="card shadow">
+            <div className="card-header">
+              <h5 className="card-title mb-0">Tạo Sản Phẩm Mới</h5>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="row justify-content-center">
-          <div className="col-md-6 text-center">
-            <div className="card shadow-sm border-0 p-4">
-              <div className="card-body">
-                <i className="bi bi-collection display-1 text-muted mb-3"></i>
-                <h4>Chưa có NFT nào</h4>
-                <p className="text-muted">
-                  Bạn chưa sở hữu NFT nào. Hãy bắt đầu bằng cách tạo hoặc mua NFT đầu tiên của bạn.
-                </p>
-                <button className="btn btn-primary">
-                  Khám phá NFT
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal tạo NFT mới */}
-      <div className="modal fade" id="createNftModal" tabIndex="-1" aria-hidden="true">
-        <div className="modal-dialog">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">Đăng bán NFT mới</h5>
-              <button 
-                type="button" 
-                className="btn-close" 
-                data-bs-dismiss="modal" 
-                aria-label="Close"
-                disabled={isSubmitting}
-              ></button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
+            <div className="card-body">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+              
+              <form onSubmit={handleSubmit}>
+                {/* Form fields remain the same */}
                 <div className="mb-3">
-                  <label className="form-label">Tên NFT</label>
+                  <label className="form-label">Tên sản phẩm</label>
                   <input 
                     type="text" 
                     className={`form-control ${formErrors.name ? 'is-invalid' : ''}`}
                     name="name"
-                    value={newNft.name}
+                    value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="Nhập tên NFT"
+                    placeholder="Nhập tên sản phẩm"
                     disabled={isSubmitting}
+                    maxLength={32}
                   />
                   {formErrors.name && (
                     <div className="invalid-feedback">{formErrors.name}</div>
                   )}
                 </div>
+
                 <div className="mb-3">
                   <label className="form-label">Mô tả</label>
                   <textarea 
                     className={`form-control ${formErrors.description ? 'is-invalid' : ''}`}
                     name="description"
-                    value={newNft.description}
+                    value={formData.description}
                     onChange={handleInputChange}
                     rows="3"
-                    placeholder="Mô tả về NFT của bạn"
+                    placeholder="Mô tả về sản phẩm"
                     disabled={isSubmitting}
-                  ></textarea>
+                    maxLength={64}
+                  />
                   {formErrors.description && (
                     <div className="invalid-feedback">{formErrors.description}</div>
                   )}
                 </div>
-                <div className="mb-3">
-                  <label className="form-label">Giá (SOL)</label>
-                  <input 
-                    type="number" 
-                    className={`form-control ${formErrors.price ? 'is-invalid' : ''}`}
-                    name="price"
-                    value={newNft.price}
-                    onChange={handleInputChange}
-                    placeholder="Nhập giá"
-                    step="0.01"
-                    min="0"
-                    disabled={isSubmitting}
-                  />
-                  {formErrors.price && (
-                    <div className="invalid-feedback">{formErrors.price}</div>
-                  )}
-                </div>
+
                 <div className="mb-3">
                   <label className="form-label">Hình ảnh</label>
-                  <input 
-                    type="file" 
-                    className={`form-control ${formErrors.image ? 'is-invalid' : ''}`}
-                    name="image"
-                    onChange={handleInputChange}
-                    accept="image/*"
-                    disabled={isSubmitting}
-                  />
-                  {formErrors.image && (
-                    <div className="invalid-feedback">{formErrors.image}</div>
-                  )}
+                  <div className="d-flex gap-3 align-items-start">
+                    <div className="flex-grow-1">
+                      <input 
+                        type="file" 
+                        className={`form-control ${formErrors.image ? 'is-invalid' : ''}`}
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        disabled={isSubmitting}
+                      />
+                      {formErrors.image && (
+                        <div className="invalid-feedback">{formErrors.image}</div>
+                      )}
+                      <small className="text-muted d-block mt-1">
+                        Hỗ trợ: JPG, PNG, GIF (Max: 5MB)
+                      </small>
+                    </div>
+                    {preview && (
+                      <div style={{ width: '100px', height: '100px' }}>
+                        <img 
+                          src={preview} 
+                          alt="Preview" 
+                          className="img-thumbnail"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  data-bs-dismiss="modal"
-                  disabled={isSubmitting}
-                >
-                  Hủy
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Đang tạo...
-                    </>
-                  ) : (
-                    'Tạo NFT'
-                  )}
-                </button>
-              </div>
-            </form>
+
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <label className="form-label">Tên thuộc tính (không bắt buộc)</label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      name="attributeName"
+                      value={formData.attributeName}
+                      onChange={handleInputChange}
+                      placeholder="Tên thuộc tính"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Giá trị thuộc tính</label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      name="attributeValue"
+                      value={formData.attributeValue}
+                      onChange={handleInputChange}
+                      placeholder="Giá trị thuộc tính"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+
+                {uploadProgress > 0 && (
+                  <div className="mb-3">
+                    <div className="progress">
+                      <div 
+                        className="progress-bar" 
+                        role="progressbar" 
+                        style={{ width: `${uploadProgress}%` }}
+                        aria-valuenow={uploadProgress} 
+                        aria-valuemin="0" 
+                        aria-valuemax="100"
+                      >
+                        {uploadProgress}%
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-end">
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Đang tạo...
+                      </>
+                    ) : (
+                      'Tạo sản phẩm'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -380,4 +364,4 @@ const MyNfts = ({ referenceId }) => {
   );
 };
 
-export default MyNfts;
+export default CreateProduct;
