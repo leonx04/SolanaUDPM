@@ -3,33 +3,37 @@ import { apiKey } from '../api';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
 
 const ItemsTable = ({ ownerReferenceId }) => {
+    // State quản lý danh sách items
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Các state mới cho việc liệt kê bán
+    // State quản lý việc liệt kê và hủy bán
     const [selectedItem, setSelectedItem] = useState(null);
     const [listingPrice, setListingPrice] = useState('');
     const [showListingModal, setShowListingModal] = useState(false);
     const [listingError, setListingError] = useState(null);
-    const [isListing, setIsListing] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
-    // State mới cho việc lọc thị trường
+    // State quản lý bộ lọc thị trường
     const [marketFilter, setMarketFilter] = useState('all');
 
+    // Hàm tìm nạp danh sách items
     const fetchItems = async () => {
         setLoading(true);
         setError(null);
 
         try {
+            // Xây dựng URL với các tham số lọc
             let url = `https://api.gameshift.dev/nx/items`;
-
-            // Thêm tham số lọc dựa trên trạng thái thị trường
             const params = new URLSearchParams();
+
+            // Thêm tham số chủ sở hữu nếu có
             if (ownerReferenceId) {
                 params.append('ownerReferenceId', ownerReferenceId);
             }
 
+            // Áp dụng bộ lọc trạng thái bán
             switch (marketFilter) {
                 case 'forSale':
                     params.append('forSale', 'true');
@@ -41,6 +45,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
 
             url += `?${params.toString()}`;
 
+            // Gọi API để lấy danh sách items
             const response = await fetch(url, {
                 headers: {
                     'accept': 'application/json',
@@ -61,20 +66,24 @@ const ItemsTable = ({ ownerReferenceId }) => {
         }
     };
 
+    // Tự động tải items khi component mount hoặc các dependency thay đổi
     useEffect(() => {
         fetchItems();
     }, [ownerReferenceId, marketFilter]);
 
+    // Hàm xử lý liệt kê tài sản bán
     const handleListForSale = async () => {
+        // Kiểm tra tính hợp lệ của giá
         if (!selectedItem || !listingPrice) {
             setListingError('Vui lòng nhập giá hợp lệ');
             return;
         }
 
-        setIsListing(true);
+        setIsProcessing(true);
         setListingError(null);
 
         try {
+            // Gọi API để liệt kê tài sản
             const response = await fetch(
                 `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/list-for-sale`,
                 {
@@ -100,7 +109,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
 
             const data = await response.json();
 
-            // Điều hướng người dùng đến URL đồng ý
+            // Chuyển hướng người dùng đến URL đồng ý
             if (data.consentUrl) {
                 window.location.href = data.consentUrl;
             }
@@ -110,11 +119,51 @@ const ItemsTable = ({ ownerReferenceId }) => {
         } catch (err) {
             setListingError(err.message);
         } finally {
-            setIsListing(false);
+            setIsProcessing(false);
             setShowListingModal(false);
         }
     };
 
+    // Hàm xử lý hủy bán tài sản
+    const handleCancelSale = async (itemId) => {
+        setIsProcessing(true);
+        setListingError(null);
+
+        try {
+            // Gọi API để hủy bán tài sản với URL mới
+            const response = await fetch(
+                `https://api.gameshift.dev/assets/${itemId}/cancel-listing`, // Thay đổi URL endpoint
+                {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'x-api-key': apiKey
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Không thể hủy bán tài sản');
+            }
+
+            const data = await response.json();
+
+            // Chuyển hướng người dùng đến URL đồng ý
+            if (data.consentUrl) {
+                window.location.href = data.consentUrl;
+            }
+
+            // Làm mới danh sách sau khi hủy bán
+            fetchItems();
+        } catch (err) {
+            setListingError(err.message);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    // Mở modal để liệt kê tài sản
     const openListingModal = (item) => {
         setSelectedItem(item);
         setListingPrice('');
@@ -122,7 +171,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
         setShowListingModal(true);
     };
 
-    // Hàm để rút gọn text
+    // Hàm rút gọn văn bản
     const truncateText = (text, maxLength) => {
         if (!text) return '-';
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
@@ -130,6 +179,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
 
     return (
         <div className="card w-100">
+            {/* Tiêu đề và các nút điều khiển */}
             <div className="card-header bg-white">
                 <div className="d-flex justify-content-between align-items-center">
                     <h5 className="card-title mb-0">Danh Sách Items</h5>
@@ -155,7 +205,9 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 </div>
             </div>
 
+            {/* Nội dung danh sách items */}
             <div className="card-body p-0">
+                {/* Trạng thái tải và lỗi */}
                 {loading ? (
                     <div className="d-flex justify-content-center align-items-center p-5">
                         <div className="spinner-border text-primary" role="status">
@@ -236,6 +288,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                         </style>
                         <div className="mobile-table-wrapper">
                             <table className="table table-hover mb-0">
+                                {/* Tiêu đề bảng */}
                                 <thead>
                                     <tr className="bg-light">
                                         <th style={{ width: '90px' }}>Loại</th>
@@ -247,11 +300,13 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                         <th style={{ width: '150px' }}>Hành Động</th>
                                     </tr>
                                 </thead>
+                                {/* Nội dung bảng */}
                                 <tbody>
                                     {items.map((itemData, index) => {
                                         const { type, item } = itemData;
                                         return (
                                             <tr key={index}>
+                                                {/* Các cột thông tin */}
                                                 <td>
                                                     <span className={`badge ${type === 'Currency' ? 'badge-currency' : 'badge-asset'}`}>
                                                         {type}
@@ -291,7 +346,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                                         </div>
                                                     )}
                                                 </td>
-
                                                 <td>
                                                     {(item.priceCents > 0 && item.status === 'Committed') ? (
                                                         <span className="badge badge-for-sale">
@@ -308,15 +362,29 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                                         {item.mintAddress}
                                                     </span>
                                                 </td>
+                                                {/* Nút hành động */}
                                                 <td>
-                                                    {type === 'UniqueAsset' && !item.forSale && (
-                                                        <Button
-                                                            variant="outline-primary"
-                                                            size="sm"
-                                                            onClick={() => openListingModal(item)}
-                                                        >
-                                                            Liệt Kê Bán
-                                                        </Button>
+                                                    {type === 'UniqueAsset' && (
+                                                        <>
+                                                            {item.priceCents > 0 && item.status === 'Committed' ? (
+                                                                <Button
+                                                                    variant="outline-danger"
+                                                                    size="sm"
+                                                                    onClick={() => handleCancelSale(item.id)}
+                                                                    disabled={isProcessing}
+                                                                >
+                                                                    {isProcessing ? 'Đang Xử Lý...' : 'Hủy Bán'}
+                                                                </Button>
+                                                            ) : (
+                                                                <Button
+                                                                    variant="outline-primary"
+                                                                    size="sm"
+                                                                    onClick={() => openListingModal(item)}
+                                                                >
+                                                                    Liệt Kê Bán
+                                                                </Button>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </td>
                                             </tr>
@@ -329,16 +397,18 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 )}
             </div>
 
-            {/* Modal Liệt Kê Bán */}
+            {/* Modal liệt kê bán */}
             <Modal show={showListingModal} onHide={() => setShowListingModal(false)}>
                 <Modal.Header closeButton>
                     <Modal.Title>Liệt Kê Tài Sản Bán</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
+                    {/* Hiển thị lỗi nếu có */}
                     {listingError && (
                         <Alert variant="danger">{listingError}</Alert>
                     )}
 
+                    {/* Form nhập thông tin bán */}
                     <Form>
                         <Form.Group>
                             <Form.Label>Tên Tài Sản</Form.Label>
@@ -366,19 +436,19 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
+                    {/* Nút hủy và xác nhận */}
                     <Button
                         variant="secondary"
                         onClick={() => setShowListingModal(false)}
-                        disabled={isListing}
+                        disabled={isProcessing}
                     >
-                        Hủy
-                    </Button>
+                        Hủy</Button>
                     <Button
                         variant="primary"
                         onClick={handleListForSale}
-                        disabled={isListing || !listingPrice}
+                        disabled={isProcessing || !listingPrice}
                     >
-                        {isListing ? 'Đang Xử Lý...' : 'Liệt Kê Bán'}
+                        {isProcessing ? 'Đang Xử Lý...' : 'Liệt Kê Bán'}
                     </Button>
                 </Modal.Footer>
             </Modal>
