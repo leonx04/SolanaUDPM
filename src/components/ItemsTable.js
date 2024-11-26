@@ -442,7 +442,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
     return (
         <div className="card w-100">
             {/* Tiêu đề và các nút điều khiển */}
-            <div className="card-header bg-white">
+            <div className="card-header ">
                 <div className="d-flex justify-content-between align-items-center">
                     <h5 className="card-title mb-0">Danh Sách Items</h5>
                     <div className="d-flex align-items-center">

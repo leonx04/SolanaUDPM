@@ -243,7 +243,7 @@ const MarketplaceHome = ({ referenceId }) => {
   }
 
   return (
-    <div className="container-fluid py-5 bg-light">
+    <div className="container-fluid py-5 ">
       <div className="container">
         <h1 className="text-center mb-5 display-4 fw-bold text-primary">
           Marketplace Unique Assets
@@ -296,7 +296,7 @@ const MarketplaceHome = ({ referenceId }) => {
                   />
                   <Card.Body>
                     <Card.Title className="fw-bold">{item.name}</Card.Title>
-                    <Card.Text className="text-muted mb-2">
+                    <Card.Text className="theme-text text-muted mb-2">
                       {item.description || 'Không có mô tả'}
                     </Card.Text>
 

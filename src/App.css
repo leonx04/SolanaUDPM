@@ -392,3 +392,284 @@
     overflow-y: auto;
   }
 }
+/* Giữ nguyên các CSS hiện tại và thêm đoạn sau vào cuối file */
+
+/* Theme Variables */
+:root {
+  /* Light Theme */
+  --light-bg-primary: #f8f9fa;
+  --light-bg-secondary: #ffffff;
+  --light-text-primary: #333;
+  --light-text-secondary: #6c757d;
+  --light-border-color: #dee2e6;
+
+  /* Dark Theme */
+  --dark-bg-primary: #121212;
+  --dark-bg-secondary: #1e1e1e;
+  --dark-text-primary: #e0e0e0;
+  --dark-text-secondary: #a0a0a0;
+  --dark-border-color: #444;
+}
+
+/* Light Theme */
+.light-theme {
+  background-color: var(--light-bg-primary);
+  color: var(--light-text-primary);
+}
+
+.light-theme .dashboard-container,
+.light-theme .main-content {
+  background-color: var(--light-bg-primary);
+}
+
+.light-theme .top-nav {
+  background-color: var(--light-bg-secondary);
+  border-bottom-color: var(--light-border-color);
+}
+
+.light-theme .sidebar {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+}
+
+.light-theme .content-area {
+  background-color: var(--light-bg-primary);
+}
+
+.light-theme .card {
+  background-color: var(--light-bg-secondary);
+  border-color: var(--light-border-color);
+}
+
+.light-theme .table {
+  color: var(--light-text-primary);
+}
+
+/* Dark Theme */
+.dark-theme {
+  background-color: var(--dark-bg-primary);
+  color: var(--dark-text-primary);
+}
+
+.dark-theme .dashboard-container,
+.dark-theme .main-content {
+  background-color: var(--dark-bg-primary);
+}
+
+.dark-theme .top-nav {
+  background-color: var(--dark-bg-secondary);
+  border-bottom-color: var(--dark-border-color);
+}
+
+.dark-theme .sidebar {
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  color: #ecf0f1;
+}
+
+.dark-theme .content-area {
+  background-color: var(--dark-bg-primary);
+}
+
+.dark-theme .card {
+  background-color: var(--dark-bg-secondary);
+  border-color: var(--dark-border-color);
+  color: var(--dark-text-primary);
+}
+
+.dark-theme .table {
+  color: var(--dark-text-primary);
+}
+
+.dark-theme .table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark-theme .table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.theme-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark-theme .theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+/* Theme Text Colors for Top Navigation */
+.light-theme .top-nav {
+  color: var(--light-text-primary);
+}
+
+.dark-theme .top-nav {
+  color: var(--dark-text-primary);
+}
+
+.light-theme .top-nav .text-muted  {
+  color: var(--light-text-secondary) !important;
+}
+
+.dark-theme .top-nav .text-muted {
+  color: var(--dark-text-secondary) !important;
+}
+
+.light-theme .top-nav .text-dark .text-muted{
+  color: var(--light-text-primary) !important;
+}
+
+.dark-theme .top-nav .text-dark .text-muted {
+  color: var(--dark-text-primary) !important;
+}
+
+/* Dropdown menu colors */
+.light-theme .dropdown-menu {
+  background-color: var(--light-bg-secondary);
+  color: var(--light-text-primary);
+  border-color: var(--light-border-color);
+}
+
+.dark-theme .dropdown-menu {
+  background-color: var(--dark-bg-secondary);
+  color: var(--dark-text-primary);
+  border-color: var(--dark-border-color);
+}
+
+.light-theme .dropdown-item {
+  color: var(--light-text-primary);
+}
+
+.dark-theme .dropdown-item {
+  color: var(--dark-text-primary);
+}
+
+.light-theme .dropdown-item:hover,
+.light-theme .dropdown-item:focus {
+  background-color: rgba(0,0,0,0.05);
+  color: var(--light-text-primary);
+}
+
+.dark-theme .dropdown-item:hover,
+.dark-theme .dropdown-item:focus {
+  background-color: rgba(255,255,255,0.1);
+  color: var(--dark-text-primary);
+}
+/* Dark Mode Styles for Marketplace Home */
+.dark-theme .marketplace-home {
+  background-color: var(--dark-bg-primary);
+  color: var(--dark-text-primary);
+}
+
+.dark-theme .marketplace-home .display-4 {
+  color: var(--primary-color);
+}
+
+.dark-theme .marketplace-home .card {
+  background-color: var(--dark-bg-secondary);
+  border-color: var(--dark-border-color);
+  color: var(--dark-text-primary);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark-theme .marketplace-home .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(255, 255, 255, 0.05);
+}
+
+.dark-theme .marketplace-home .card-img-top {
+  filter: brightness(0.9);
+}
+
+.dark-theme .marketplace-home .card-title {
+  color: var(--dark-text-primary);
+}
+
+.dark-theme .marketplace-home .card-text {
+  color: var(--dark-text-secondary);
+}
+
+.dark-theme .marketplace-home .badge.bg-primary {
+  background-color: var(--primary-color) !important;
+  color: white;
+}
+
+.dark-theme .marketplace-home .btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.dark-theme .marketplace-home .btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.dark-theme .marketplace-home .form-select {
+  background-color: var(--dark-bg-secondary);
+  color: var(--dark-text-primary);
+  border-color: var(--dark-border-color);
+}
+
+.dark-theme .marketplace-home .pagination .page-link {
+  background-color: var(--dark-bg-secondary);
+  color: var(--dark-text-primary);
+  border-color: var(--dark-border-color);
+}
+
+.dark-theme .marketplace-home .pagination .page-item.disabled .page-link {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--dark-text-secondary);
+}
+
+.dark-theme .marketplace-home .modal-content {
+  background-color: var(--dark-bg-secondary);
+  color: var(--dark-text-primary);
+}
+
+.dark-theme .marketplace-home .modal-header {
+  border-bottom-color: var(--dark-border-color);
+}
+
+.dark-theme .marketplace-home .modal-footer {
+  border-top-color: var(--dark-border-color);
+}
+/* Text color class */
+.theme-text {
+  color: var(--light-text-primary);  /* Mặc định màu sáng */
+}
+
+.light-theme .theme-text {
+  color: var(--light-text-primary);  /* Màu sáng */
+}
+
+.dark-theme .theme-text {
+  color: var(--dark-text-primary);   /* Màu tối */
+}
+
+/* Đảm bảo các phần tử khác sẽ tự động thay đổi màu sắc */
+.light-theme .top-nav,
+.light-theme .sidebar,
+.light-theme .content-area,
+.light-theme .card {
+  background-color: var(--light-bg-primary);
+  color: var(--light-text-primary);
+}
+
+.dark-theme .top-nav,
+.dark-theme .sidebar,
+.dark-theme .content-area,
+.dark-theme .card {
+  background-color: var(--dark-bg-primary);
+  color: var(--dark-text-primary);
+}

@@ -53,6 +53,16 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
+  // Theme state
+  const [theme, setTheme] = useState(() => {
+    // Kiểm tra trạng thái theme từ localStorage
+    const savedTheme = localStorage.getItem('app-theme');
+    if (savedTheme) return savedTheme;
+
+    // Mặc định theo hệ thống
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
   // Wallet state - Thêm state cho USDC
   const [walletAddress, setWalletAddress] = useState(null);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -62,6 +72,19 @@ function App() {
 
   // Solana connection
   const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+
+  // Hàm thay đổi theme
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('app-theme', newTheme);
+  };
+
+  // Theo dõi theme và áp dụng class
+  useEffect(() => {
+    document.body.classList.remove('light-theme', 'dark-theme');
+    document.body.classList.add(`${theme}-theme`);
+  }, [theme]);
 
   // Hàm fetch số dư USDC
   const fetchUsdcBalance = async () => {
@@ -212,7 +235,7 @@ function App() {
 
   return (
     <Router>
-      <div className="app-container">
+      <div className={`app-container ${theme}-theme`}>
         {!isLoggedIn ? (
           <div className="auth-container">
             <AuthForm setIsLoggedIn={setIsLoggedIn} setUserData={setUserData} />
@@ -277,6 +300,18 @@ function App() {
                   >
                     <i className="bi bi-list fs-4"></i>
                   </button>
+                  {/* Theme Toggle Button */}
+                  <button
+                    className="btn btn-link theme-toggle ms-3"
+                    onClick={toggleTheme}
+                    title="Chuyển chế độ giao diện"
+                  >
+                    {theme === 'light' ? (
+                      <i className="bi bi-moon-stars text-dark"></i>
+                    ) : (
+                      <i className="bi bi-brightness-high text-warning"></i>
+                    )}
+                  </button>
 
                   {/* Wallet Connection Button */}
                   {!walletAddress ? (
@@ -330,7 +365,7 @@ function App() {
                   <Dropdown.Toggle
                     variant="link"
                     id="user-dropdown"
-                    className="d-flex align-items-center text-dark text-decoration-none"
+                    className="theme-text d-flex align-items-center text-decoration-none "
                   >
                     <i className="bi bi-person-circle me-2"></i>
                     {userData?.email}
