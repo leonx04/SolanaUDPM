@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { apiKey } from '../api';
 
-const apiUrl = "https://api.gameshift.dev/nx/users";
+const apiBaseUrl = "https://api.gameshift.dev/nx/users";
 
 const AuthForm = ({ setIsLoggedIn, setUserData }) => {
   const [formData, setFormData] = useState({
-    email: '',
-    referenceId: ''
+    referenceId: '',
+    email: ''
   });
   const [isRegistering, setIsRegistering] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -45,32 +45,59 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
     setSuccessMessage('');
 
     try {
-      const response = isRegister
-        ? await axios.post(apiUrl, formData, {
-            headers: {
-              "x-api-key": apiKey,
-              "Content-Type": "application/json",
-            },
-          })
-        : await axios.get(apiUrl, {
-            params: formData,
-            headers: { "x-api-key": apiKey },
-          });
+      const config = {
+        headers: {
+          'accept': 'application/json',
+          'content-type': 'application/json',
+          'x-api-key': apiKey
+        }
+      };
 
-      if (response.data) {
-        setSuccessMessage(
-          isRegister ? 'Đăng ký thành công!' : 'Đăng nhập thành công!'
-        );
-        setTimeout(() => {
-          setUserData(formData);
-          setIsLoggedIn(true);
-          setIsFormVisible(false);
-        }, 1500);
+      if (isRegister) {
+        // Đăng ký người dùng (POST request)
+        await axios.post(apiBaseUrl, {
+          referenceId: formData.referenceId,
+          email: formData.email
+        }, config);
+
+        setSuccessMessage('Đăng ký thành công!');
+      } else {
+        // Đăng nhập người dùng (kiểm tra tài khoản)
+        try {
+          // Thử lấy thông tin người dùng bằng referenceId
+          const response = await axios.get(`${apiBaseUrl}/${formData.referenceId}`, config);
+          
+          // Kiểm tra email có khớp với tài khoản không
+          if (response.data.email !== formData.email) {
+            throw new Error('Email không khớp');
+          }
+
+          setSuccessMessage('Đăng nhập thành công!');
+        } catch (err) {
+          // Xử lý lỗi chi tiết hơn
+          if (err.response && err.response.status === 404) {
+            setErrorMessage('Tài khoản không tồn tại.');
+          } else if (err.message === 'Email không khớp') {
+            setErrorMessage('Email không khớp với tài khoản.');
+          } else {
+            setErrorMessage('Đăng nhập thất bại. Vui lòng thử lại.');
+          }
+          return;
+        }
       }
+
+      // Cập nhật trạng thái đăng nhập
+      setTimeout(() => {
+        setUserData(formData);
+        setIsLoggedIn(true);
+        setIsFormVisible(false);
+      }, 1500);
+
     } catch (err) {
+      // Xử lý lỗi đăng ký
       setErrorMessage(
-        err.response?.status === 404
-          ? 'Tài khoản không tồn tại hoặc thông tin không chính xác.'
+        err.response?.status === 409
+          ? 'Tài khoản đã tồn tại.'
           : 'Đã xảy ra lỗi. Vui lòng thử lại sau.'
       );
     } finally {
@@ -78,6 +105,7 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
     }
   };
 
+  // Phần render giữ nguyên như trước
   if (!isFormVisible) {
     return (
       <div className="position-absolute top-50 start-50 translate-middle text-center">
@@ -94,7 +122,6 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
         <div className="row justify-content-center">
           <div className="col-md-5 col-lg-4">
             <div className="bg-white rounded-4 p-4 shadow-sm">
-              {/* Header */}
               <div className="text-center mb-4">
                 <h4 className="fw-bold mb-1 text-dark">
                   {isRegistering ? 'Tạo tài khoản' : 'Đăng nhập'}
@@ -106,7 +133,6 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
                 </p>
               </div>
 
-              {/* Form */}
               <form>
                 <div className="mb-3">
                   <input
@@ -150,7 +176,6 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
                 </button>
               </form>
 
-              {/* Messages */}
               {errorMessage && (
                 <div className="alert alert-danger py-2 mt-3 mb-0 text-center small">
                   {errorMessage}
@@ -163,7 +188,6 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
                 </div>
               )}
 
-              {/* Switch Login/Register */}
               <div className="text-center mt-4">
                 <button
                   type="button"
