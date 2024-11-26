@@ -15,6 +15,73 @@ const ItemsTable = ({ ownerReferenceId }) => {
     const [listingError, setListingError] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // State mới cho chức năng chỉnh sửa
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editItem, setEditItem] = useState(null);
+    const [editImageUrl, setEditImageUrl] = useState('');
+    const [editAttributes, setEditAttributes] = useState([]);
+    const [editError, setEditError] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    // Thêm vào các state khác của component
+    const [editImageFile, setEditImageFile] = useState(null);
+    const [editImagePreview, setEditImagePreview] = useState(null);
+
+    // Thêm ở đầu file, ngay sau các import
+    const CLOUDINARY_UPLOAD_PRESET = 'ARTSOLANA';
+    const CLOUDINARY_CLOUD_NAME = 'dy3nmkszo';
+
+    // Hàm upload ảnh lên Cloudinary
+    const uploadImageToCloudinary = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('api_key', process.env.REACT_APP_CLOUDINARY_API_KEY);
+
+        try {
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                {
+                    method: 'POST',
+                    body: formData
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || 'Upload failed');
+            }
+
+            const data = await response.json();
+            return data.secure_url;
+        } catch (err) {
+            console.error('Error uploading to Cloudinary:', err);
+            throw new Error('Không thể tải lên hình ảnh. Vui lòng thử lại. Chi tiết: ' + err.message);
+        }
+    };
+
+    const handleEditImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                setEditError("Kích thước file không được vượt quá 5MB");
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                setEditError("Vui lòng chọn file hình ảnh");
+                return;
+            }
+
+            setEditImageFile(file);
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setEditImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     // State quản lý bộ lọc thị trường
     const [marketFilter, setMarketFilter] = useState('all');
 
@@ -176,6 +243,93 @@ const ItemsTable = ({ ownerReferenceId }) => {
         if (!text) return '-';
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     };
+
+    // Hàm mở modal chỉnh sửa
+    const openEditModal = (item) => {
+        setEditItem(item);
+        setEditImageUrl(item.imageUrl || '');
+        setEditImageFile(null);
+        setEditImagePreview(null);
+
+        // Khởi tạo attributes từ item hiện tại
+        setEditAttributes(item.attributes || []);
+
+        setEditError(null);
+        setShowEditModal(true);
+    };
+
+    // Hàm thêm thuộc tính mới
+    const addAttribute = () => {
+        setEditAttributes([...editAttributes, { traitType: '', value: '' }]);
+    };
+
+    // Hàm xóa thuộc tính
+    const removeAttribute = (indexToRemove) => {
+        setEditAttributes(editAttributes.filter((_, index) => index !== indexToRemove));
+    };
+
+    // Hàm cập nhật thuộc tính
+    const updateAttribute = (index, field, value) => {
+        const newAttributes = [...editAttributes];
+        newAttributes[index][field] = value;
+        setEditAttributes(newAttributes);
+    };
+
+    const handleEditAsset = async () => {
+        if (!editItem) return;
+
+        setIsEditing(true);
+        setEditError(null);
+
+        try {
+            let newImageUrl = editImageUrl;
+
+            // Nếu có file ảnh mới, tiến hành upload
+            if (editImageFile) {
+                newImageUrl = await uploadImageToCloudinary(editImageFile);
+            }
+
+            // Chuẩn bị payload cho API
+            const payload = {
+                imageUrl: newImageUrl,
+                attributes: editAttributes
+            };
+
+            const response = await fetch(
+                `https://api.gameshift.dev/nx/unique-assets/${editItem.id}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'accept': 'application/json',
+                        'content-type': 'application/json',
+                        'x-api-key': apiKey
+                    },
+                    body: JSON.stringify(payload)
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Không thể chỉnh sửa tài sản');
+            }
+
+            // Làm mới danh sách sau khi chỉnh sửa
+            await fetchItems();
+
+            // Đóng modal và reset state
+            setShowEditModal(false);
+            setEditImageFile(null);
+            setEditImagePreview(null);
+        } catch (err) {
+            setEditError(err.message);
+        } finally {
+            setIsEditing(false);
+        }
+    };
+
+    // Reset state khi mở modal chỉnh sửa
+
+
 
     return (
         <div className="card w-100">
@@ -365,6 +519,19 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                                 {/* Nút hành động */}
                                                 <td>
                                                     {type === 'UniqueAsset' && (
+                                                        <div className="d-flex gap-2">
+                                                            {/* Nút chỉnh sửa */}
+                                                            <Button
+                                                                variant="outline-secondary"
+                                                                size="sm"
+                                                                onClick={() => openEditModal(item)}
+                                                            >
+                                                                Sửa
+                                                            </Button>
+                                                            {/* Giữ nguyên các nút hành động khác */}
+                                                        </div>
+                                                    )}
+                                                    {type === 'UniqueAsset' && (
                                                         <>
                                                             {item.priceCents > 0 && item.status === 'Committed' ? (
                                                                 <Button
@@ -452,6 +619,109 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+            {/* Modal chỉnh sửa tài sản */}
+            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Chỉnh Sửa Tài Sản</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {editError && (
+                        <Alert variant="danger">{editError}</Alert>
+                    )}
+
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Tên Tài Sản</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editItem?.name || ''}
+                                readOnly
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Hình Ảnh</Form.Label>
+                            <div className="d-flex gap-3 align-items-start">
+                                <div className="flex-grow-1">
+                                    <Form.Control
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleEditImageChange}
+                                        disabled={isEditing}
+                                    />
+                                    <Form.Text className="text-muted">
+                                        JPG, PNG, GIF (Max: 5MB)
+                                    </Form.Text>
+                                </div>
+                                {(editImagePreview || editImageUrl) && (
+                                    <div style={{ width: '100px', height: '100px' }}>
+                                        <img
+                                            src={editImagePreview || editImageUrl}
+                                            alt="Preview"
+                                            className="img-thumbnail"
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </Form.Group>
+
+                        {/* Loại bỏ trường URL hình ảnh cũ */}
+
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                            <h6>Thuộc Tính</h6>
+                            <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={addAttribute}
+                            >
+                                Thêm Thuộc Tính
+                            </Button>
+                        </div>
+
+                        {editAttributes.map((attr, index) => (
+                            <div key={index} className="d-flex mb-2 gap-2">
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Tên thuộc tính"
+                                    value={attr.traitType}
+                                    onChange={(e) => updateAttribute(index, 'traitType', e.target.value)}
+                                />
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Giá trị thuộc tính"
+                                    value={attr.value}
+                                    onChange={(e) => updateAttribute(index, 'value', e.target.value)}
+                                />
+                                <Button
+                                    variant="outline-danger"
+                                    onClick={() => removeAttribute(index)}
+                                >
+                                    Xóa
+                                </Button>
+                            </div>
+                        ))}
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button
+                        variant="secondary"
+                        onClick={() => setShowEditModal(false)}
+                        disabled={isEditing}
+                    >
+                        Hủy
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={handleEditAsset}
+                        disabled={isEditing}
+                    >
+                        {isEditing ? 'Đang Lưu...' : 'Lưu Thay Đổi'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
         </div>
     );
 };
