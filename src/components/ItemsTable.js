@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiKey } from '../api';
-import { Modal, Button, Form, Alert } from 'react-bootstrap';
+import { Modal, Button, Form, Alert, Pagination } from 'react-bootstrap';
 
 const ItemsTable = ({ ownerReferenceId }) => {
     // State quản lý danh sách items
@@ -25,6 +25,10 @@ const ItemsTable = ({ ownerReferenceId }) => {
     // Thêm vào các state khác của component
     const [editImageFile, setEditImageFile] = useState(null);
     const [editImagePreview, setEditImagePreview] = useState(null);
+    // Các state mới cho phân trang
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
     //Thêm state để quản lý loại tiền tệ:
     const [selectedCurrency, setSelectedCurrency] = useState('USDC');
     const availableCurrencies = items
@@ -136,6 +140,107 @@ const ItemsTable = ({ ownerReferenceId }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Tính toán các giá trị phân trang
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = items.slice(indexOfFirstItem, indexOfLastItem);
+
+    // Tính tổng số trang
+    const totalPages = Math.ceil(items.length / itemsPerPage);
+
+    // Hàm thay đổi trang
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    // Hàm sinh các nút phân trang động
+    const renderPaginationItems = () => {
+        const paginationItems = [];
+
+        // Nút trang đầu
+        paginationItems.push(
+            <Pagination.First
+                key="first"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+            />
+        );
+
+        // Nút trang trước
+        paginationItems.push(
+            <Pagination.Prev
+                key="prev"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+            />
+        );
+
+        // Các nút số trang
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        // Điều chỉnh lại nếu đến cuối hoặc đầu
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        for (let number = startPage; number <= endPage; number++) {
+            paginationItems.push(
+                <Pagination.Item
+                    key={number}
+                    active={number === currentPage}
+                    onClick={() => paginate(number)}
+                >
+                    {number}
+                </Pagination.Item>
+            );
+        }
+
+        // Nút trang kế tiếp
+        paginationItems.push(
+            <Pagination.Next
+                key="next"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+            />
+        );
+
+        // Nút trang cuối
+        paginationItems.push(
+            <Pagination.Last
+                key="last"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+            />
+        );
+
+        return paginationItems;
+    };
+
+    // Thêm dropdown chọn số lượng item trên mỗi trang
+    const renderItemsPerPageSelector = () => {
+        const pageSizeOptions = [5, 10, 20, 50];
+        return (
+            <div className="d-flex align-items-center ms-3">
+                <span className="me-2">Hiển thị:</span>
+                <select
+                    className="form-select form-select-sm"
+                    style={{ width: 'auto' }}
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1); // Reset về trang đầu
+                    }}
+                >
+                    {pageSizeOptions.map(size => (
+                        <option key={size} value={size}>
+                            {size} mục
+                        </option>
+                    ))}
+                </select>
+            </div>
+        );
     };
 
     // Tự động tải items khi component mount hoặc các dependency thay đổi
@@ -376,194 +481,265 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 ) : items.length === 0 ? (
                     <div className="text-center py-5 text-muted">Không tìm thấy items</div>
                 ) : (
-                    <div className="table-responsive">
-                        <style>
-                            {`
-                @media (max-width: 768px) {
-                  .table-responsive {
-                    display: block;
-                    width: 100%;
-                    overflow-x: auto;
-                    -webkit-overflow-scrolling: touch;
-                  }
-                  
-                  .mobile-table-wrapper {
-                    min-width: 800px;
-                  }
-                }
+                    <>
+                        <div className="table-responsive">
+                            <style>
+                                {`
+                    @media (max-width: 768px) {
+                        .table-responsive {
+                            display: block;
+                            width: 100%;
+                            overflow-x: auto;
+                            -webkit-overflow-scrolling: touch;
+                        }
+                        
+                        .mobile-table-wrapper {
+                            min-width: 800px;
+                        }
+                    }
 
-                .item-image {
-                  width: 40px;
-                  height: 40px;
-                  object-fit: cover;
-                  border-radius: 4px;
-                  transition: transform 0.2s;
-                }
+                    .item-image {
+                        width: 40px;
+                        height: 40px;
+                        object-fit: cover;
+                        border-radius: 4px;
+                        transition: transform 0.2s;
+                    }
 
-                .item-image:hover {
-                  transform: scale(3);
-                  z-index: 1000;
-                }
+                    .item-image:hover {
+                        transform: scale(3);
+                        z-index: 1000;
+                    }
 
-                .table > :not(caption) > * > * {
-                  padding: 0.75rem;
-                  vertical-align: middle;
-                }
+                    .table > :not(caption) > * > * {
+                        padding: 0.75rem;
+                        vertical-align: middle;
+                    }
 
-                .badge-currency {
-                  background-color: #e3f2fd;
-                  color: #1976d2;
-                }
+                    .badge-currency {
+                        background-color: #e3f2fd;
+                        color: #1976d2;
+                    }
 
-                .badge-asset {
-                  background-color: #f3e5f5;
-                  color: #7b1fa2;
-                }
+                    .badge-asset {
+                        background-color: #f3e5f5;
+                        color: #7b1fa2;
+                    }
 
-                .badge-for-sale {
-                  background-color: #e8f5e9;
-                  color: #2e7d32;
-                }
+                    .badge-for-sale {
+                        background-color: #e8f5e9;
+                        color: #2e7d32;
+                    }
 
-                .table-hover tbody tr:hover {
-                  background-color: rgba(0, 0, 0, 0.02);
-                }
+                    .table-hover tbody tr:hover {
+                        background-color: rgba(0, 0, 0, 0.02);
+                    }
 
-                .mint-address {
-                  font-family: monospace;
-                  font-size: 0.875em;
-                  background-color: #f8f9fa;
-                  padding: 0.2em 0.4em;
-                  border-radius: 3px;
-                  white-space: nowrap;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                  max-width: 150px;
-                  display: inline-block;
-                }
-              `}
-                        </style>
-                        <div className="mobile-table-wrapper">
-                            <table className="table table-hover mb-0">
-                                {/* Tiêu đề bảng */}
-                                <thead>
-                                    <tr className="bg-light">
-                                        <th style={{ width: '90px' }}>Loại</th>
-                                        <th style={{ width: '80px' }}>Ảnh</th>
-                                        <th style={{ width: '180px' }}>Tên</th>
-                                        <th style={{ width: '200px' }}>Mô tả</th>
-                                        <th style={{ width: '120px' }}>Trạng Thái Bán</th>
-                                        <th style={{ width: '200px' }}>Địa chỉ ví</th>
-                                        <th style={{ width: '150px' }}>Hành Động</th>
-                                    </tr>
-                                </thead>
-                                {/* Nội dung bảng */}
-                                <tbody>
-                                    {items.map((itemData, index) => {
-                                        const { type, item } = itemData;
-                                        return (
-                                            <tr key={index}>
-                                                {/* Các cột thông tin */}
-                                                <td>
-                                                    <span className={`badge ${type === 'Currency' ? 'badge-currency' : 'badge-asset'}`}>
-                                                        {type}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    {item.imageUrl ? (
-                                                        <img
-                                                            src={item.imageUrl}
-                                                            alt={item.name}
-                                                            className="item-image"
-                                                            title={item.name}
-                                                        />
-                                                    ) : (
-                                                        <div
-                                                            className="bg-light d-flex align-items-center justify-content-center"
-                                                            style={{ width: '40px', height: '40px', borderRadius: '4px' }}
-                                                        >
-                                                            <i className="fas fa-image text-muted"></i>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    <div className="fw-medium">{item.name || item.symbol || '-'}</div>
-                                                    <small className="text-muted">ID: {truncateText(item.id, 15)}</small>
-                                                </td>
-                                                <td>
-                                                    {type === 'Currency' ? (
-                                                        <div>
-                                                            <span className="badge bg-light text-dark">
-                                                                Decimals: {item.decimals}
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-truncate" style={{ maxWidth: '200px' }} title={item.description}>
-                                                            {item.description || '-'}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    {(item.priceCents > 0 && item.status === 'Committed') ? (
-                                                        <span className="badge badge-for-sale">
-                                                            Đang Bán
-                                                            <br />
-                                                            <small>{(item.priceCents / 100).toFixed(2)} USDC</small>
+                    .mint-address {
+                        font-family: monospace;
+                        font-size: 0.875em;
+                        background-color: #f8f9fa;
+                        padding: 0.2em 0.4em;
+                        border-radius: 3px;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        max-width: 150px;
+                        display: inline-block;
+                    }
+                    `}
+                            </style>
+                            <div className="mobile-table-wrapper">
+                                <table className="table table-hover mb-0">
+                                    {/* Tiêu đề bảng */}
+                                    <thead>
+                                        <tr className="bg-light">
+                                            <th style={{ width: '90px' }}>Loại</th>
+                                            <th style={{ width: '80px' }}>Ảnh</th>
+                                            <th style={{ width: '180px' }}>Tên</th>
+                                            <th style={{ width: '200px' }}>Mô tả</th>
+                                            <th style={{ width: '120px' }}>Trạng Thái Bán</th>
+                                            <th style={{ width: '200px' }}>Địa chỉ ví</th>
+                                            <th style={{ width: '150px' }}>Hành Động</th>
+                                        </tr>
+                                    </thead>
+                                    {/* Nội dung bảng */}
+                                    <tbody>
+                                        {currentItems.map((itemData, index) => {
+                                            const { type, item } = itemData;
+                                            return (
+                                                <tr key={index}>
+                                                    {/* Các cột thông tin */}
+                                                    <td>
+                                                        <span className={`badge ${type === 'Currency' ? 'badge-currency' : 'badge-asset'}`}>
+                                                            {type}
                                                         </span>
-                                                    ) : (
-                                                        <span className="badge bg-secondary">Chưa Bán</span>
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    <span className="mint-address" title={item.mintAddress}>
-                                                        {item.mintAddress}
-                                                    </span>
-                                                </td>
-                                                {/* Nút hành động */}
-                                                <td>
-                                                    {type === 'UniqueAsset' && (
-                                                        <div className="d-flex gap-2">
-                                                            {/* Nút chỉnh sửa */}
-                                                            <Button
-                                                                variant="outline-secondary"
-                                                                size="sm"
-                                                                onClick={() => openEditModal(item)}
+                                                    </td>
+                                                    <td>
+                                                        {item.imageUrl ? (
+                                                            <img
+                                                                src={item.imageUrl}
+                                                                alt={item.name}
+                                                                className="item-image"
+                                                                title={item.name}
+                                                            />
+                                                        ) : (
+                                                            <div
+                                                                className="bg-light d-flex align-items-center justify-content-center"
+                                                                style={{ width: '40px', height: '40px', borderRadius: '4px' }}
                                                             >
-                                                                Sửa
-                                                            </Button>
-                                                            {/* Giữ nguyên các nút hành động khác */}
-                                                        </div>
-                                                    )}
-                                                    {type === 'UniqueAsset' && (
-                                                        <>
-                                                            {item.priceCents > 0 && item.status === 'Committed' ? (
+                                                                <i className="fas fa-image text-muted"></i>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        <div className="fw-medium">{item.name || item.symbol || '-'}</div>
+                                                        <small className="text-muted">ID: {truncateText(item.id, 15)}</small>
+                                                    </td>
+                                                    <td>
+                                                        {type === 'Currency' ? (
+                                                            <div>
+                                                                <span className="badge bg-light text-dark">
+                                                                    Decimals: {item.decimals}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-truncate" style={{ maxWidth: '200px' }} title={item.description}>
+                                                                {item.description || '-'}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        {(item.priceCents > 0 && item.status === 'Committed') ? (
+                                                            <span className="badge badge-for-sale">
+                                                                Đang Bán
+                                                                <br />
+                                                                <small>{(item.priceCents / 100).toFixed(2)} USDC</small>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="badge bg-secondary">Chưa Bán</span>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        <span className="mint-address" title={item.mintAddress}>
+                                                            {item.mintAddress}
+                                                        </span>
+                                                    </td>
+                                                    {/* Nút hành động */}
+                                                    <td>
+                                                        {type === 'UniqueAsset' && (
+                                                            <div className="d-flex gap-2">
+                                                                {/* Nút chỉnh sửa */}
                                                                 <Button
-                                                                    variant="outline-danger"
+                                                                    variant="outline-secondary"
                                                                     size="sm"
-                                                                    onClick={() => handleCancelSale(item.id)}
-                                                                    disabled={isProcessing}
+                                                                    onClick={() => openEditModal(item)}
                                                                 >
-                                                                    {isProcessing ? 'Đang Xử Lý...' : 'Hủy Bán'}
+                                                                    Sửa
                                                                 </Button>
-                                                            ) : (
-                                                                <Button
-                                                                    variant="outline-primary"
-                                                                    size="sm"
-                                                                    onClick={() => openListingModal(item)}
-                                                                >
-                                                                    Liệt Kê Bán
-                                                                </Button>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+
+                                                                {/* Nút bán/hủy bán */}
+                                                                {item.priceCents > 0 && item.status === 'Committed' ? (
+                                                                    <Button
+                                                                        variant="outline-danger"
+                                                                        size="sm"
+                                                                        onClick={() => handleCancelSale(item.id)}
+                                                                        disabled={isProcessing}
+                                                                    >
+                                                                        {isProcessing ? 'Đang Xử Lý...' : 'Hủy Bán'}
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button
+                                                                        variant="outline-primary"
+                                                                        size="sm"
+                                                                        onClick={() => openListingModal(item)}
+                                                                    >
+                                                                        Liệt Kê Bán
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+
+                        {/* Phân trang */}
+                        <div className="d-flex justify-content-between align-items-center p-3">
+                            <div className="d-flex align-items-center">
+                                <div className="d-flex align-items-center">
+                                    <span className="me-2">Hiển thị:</span>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        style={{ width: 'auto' }}
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setCurrentPage(1); // Reset về trang đầu
+                                        }}
+                                    >
+                                        {[5, 10, 20, 50].map(size => (
+                                            <option key={size} value={size}>
+                                                {size} mục
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <span className="ms-3 text-muted">
+                                    Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, items.length)}
+                                    {' '}của {items.length} mục
+                                </span>
+                            </div>
+                            <Pagination className="mb-0">
+                                <Pagination.First
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={currentPage === 1}
+                                />
+                                <Pagination.Prev
+                                    onClick={() => setCurrentPage(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                />
+
+                                {(() => {
+                                    const paginationItems = [];
+                                    const maxPagesToShow = 5;
+                                    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                                    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+                                    if (endPage - startPage + 1 < maxPagesToShow) {
+                                        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                                    }
+
+                                    for (let number = startPage; number <= endPage; number++) {
+                                        paginationItems.push(
+                                            <Pagination.Item
+                                                key={number}
+                                                active={number === currentPage}
+                                                onClick={() => setCurrentPage(number)}
+                                            >
+                                                {number}
+                                            </Pagination.Item>
+                                        );
+                                    }
+
+                                    return paginationItems;
+                                })()}
+
+                                <Pagination.Next
+                                    onClick={() => setCurrentPage(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                />
+                                <Pagination.Last
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    disabled={currentPage === totalPages}
+                                />
+                            </Pagination>
+                        </div>
+                    </>
                 )}
             </div>
 
