@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import { Dropdown, Button } from 'react-bootstrap';
-import { Connection, LAMPORTS_PER_SOL, clusterApiUrl } from '@solana/web3.js';
+import {
+  Connection,
+  LAMPORTS_PER_SOL,
+  clusterApiUrl,
+  PublicKey
+} from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import Home from "./components/Home";
 import MyNfts from "./components/MyNfts";
 import User from "./components/User";
@@ -10,6 +16,36 @@ import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
+// Địa chỉ token USDC chính thức trên Solana devnet
+const USDC_MINT_ADDRESS = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+
+// Hàm lấy số dư USDC
+const getUsdcBalance = async (connection, walletPublicKey) => {
+  try {
+    // Tìm tài khoản token của ví
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+      walletPublicKey,
+      { programId: TOKEN_PROGRAM_ID }
+    );
+
+    // Tìm tài khoản USDC
+    const usdcAccount = tokenAccounts.value.find(
+      (account) => account.account.data.parsed.info.mint === USDC_MINT_ADDRESS.toBase58()
+    );
+
+    // Trả về số dư USDC
+    if (usdcAccount) {
+      const usdcBalance = usdcAccount.account.data.parsed.info.tokenAmount.uiAmount;
+      return usdcBalance;
+    }
+
+    return 0; // Trả về 0 nếu không có tài khoản USDC
+  } catch (error) {
+    console.error('Lỗi khi lấy số dư USDC:', error);
+    return null;
+  }
+};
+
 function App() {
   const isPhantomInstalled = window.phantom?.solana?.isPhantom;
   const [userData, setUserData] = useState(null);
@@ -17,14 +53,29 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Wallet state
+  // Wallet state - Thêm state cho USDC
   const [walletAddress, setWalletAddress] = useState(null);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [usdcBalance, setUsdcBalance] = useState(null); // State mới cho USDC
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletError, setWalletError] = useState(null);
 
   // Solana connection
   const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+
+  // Hàm fetch số dư USDC
+  const fetchUsdcBalance = async () => {
+    if (walletAddress) {
+      try {
+        const publicKey = new PublicKey(walletAddress);
+        const balance = await getUsdcBalance(connection, publicKey);
+        setUsdcBalance(balance);
+      } catch (error) {
+        console.error('Lỗi khi lấy số dư USDC:', error);
+        setUsdcBalance(null);
+      }
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -45,14 +96,17 @@ function App() {
 
     if (provider) {
       // Listen for connection changes
-      const handleConnect = (publicKey) => {
+      const handleConnect = async (publicKey) => {
         console.log('Connected to wallet:', publicKey.toBase58());
+        // Tự động fetch USDC balance khi kết nối
+        await fetchUsdcBalance();
       };
 
       const handleDisconnect = () => {
         console.log('Disconnected from wallet');
         setWalletAddress(null);
         setWalletBalance(0);
+        setUsdcBalance(null); // Reset USDC balance
       };
 
       provider.on('connect', handleConnect);
@@ -104,7 +158,12 @@ function App() {
 
       setWalletAddress(publicKey.toString());
 
+      // Lấy số dư SOL
       await getWalletBalance(publicKey);
+
+      // Lấy số dư USDC
+      await fetchUsdcBalance();
+
     } catch (err) {
       console.error("Lỗi khi kết nối ví:", err);
 
@@ -137,6 +196,7 @@ function App() {
         await provider.disconnect();
         setWalletAddress(null);
         setWalletBalance(0);
+        setUsdcBalance(null); // Reset USDC balance
       }
     } catch (err) {
       console.error("Lỗi khi ngắt kết nối ví:", err);
@@ -238,9 +298,15 @@ function App() {
                   ) : (
                     <div className="ms-3 d-flex align-items-center">
                       <span className="me-2 text-muted">
-                        Số dư:
+                        Số dư SOL:
                         <span className="fw-bold text-dark ms-1">
                           {walletBalance.toFixed(2)} SOL
+                        </span>
+                      </span>
+                      <span className="me-2 text-muted">
+                        Số dư USDC:
+                        <span className="fw-bold text-dark ms-1">
+                          {usdcBalance !== null ? usdcBalance.toFixed(2) : 'Đang tải...'} USDC
                         </span>
                       </span>
                       <Button
@@ -288,7 +354,7 @@ function App() {
               <div className="content-area">
                 <Routes>
                   <Route path="/" element={<Navigate to="/home" replace />} />
-                  <Route path="/home" element={<Home referenceId={userData?.referenceId} />} /> {/* Chèn ở đây */}
+                  <Route path="/home" element={<Home referenceId={userData?.referenceId} />} />
                   <Route path="/my-nfts" element={<MyNfts referenceId={userData?.referenceId} />} />
                   <Route
                     path="/user"
