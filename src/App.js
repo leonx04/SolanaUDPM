@@ -39,6 +39,33 @@ function App() {
 
     handleResize(); // Initial check
     window.addEventListener('resize', handleResize);
+
+    // Phantom Wallet connection status listeners
+    const provider = window.phantom?.solana;
+    
+    if (provider) {
+      // Listen for connection changes
+      const handleConnect = (publicKey) => {
+        console.log('Connected to wallet:', publicKey.toBase58());
+      };
+
+      const handleDisconnect = () => {
+        console.log('Disconnected from wallet');
+        setWalletAddress(null);
+        setWalletBalance(0);
+      };
+
+      provider.on('connect', handleConnect);
+      provider.on('disconnect', handleDisconnect);
+
+      // Cleanup listeners and resize event
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        provider.removeListener('connect', handleConnect);
+        provider.removeListener('disconnect', handleDisconnect);
+      };
+    }
+
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -62,14 +89,32 @@ function App() {
         throw new Error("Vui lòng cài đặt Phantom Wallet!");
       }
 
-      const resp = await provider.connect();
-      const publicKey = resp.publicKey;
+      // Ensure any existing connection is properly closed
+      if (provider.isConnected) {
+        await provider.disconnect();
+      }
+
+      // Connect with explicit permission
+      await provider.connect({ onlyIfTrusted: false });
+
+      const publicKey = provider.publicKey;
+      if (!publicKey) {
+        throw new Error("Không thể lấy địa chỉ ví. Vui lòng thử lại.");
+      }
+
       setWalletAddress(publicKey.toString());
       
       await getWalletBalance(publicKey);
     } catch (err) {
       console.error("Lỗi khi kết nối ví:", err);
-      setWalletError(err.message || "Không thể kết nối ví. Vui lòng thử lại.");
+      
+      // More specific error handling
+      if (err.code === 4001) {
+        // User rejected the request
+        setWalletError("Kết nối ví bị từ chối. Vui lòng thử lại.");
+      } else {
+        setWalletError(err.message || "Không thể kết nối ví. Vui lòng thử lại.");
+      }
     } finally {
       setWalletLoading(false);
     }
