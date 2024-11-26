@@ -42,7 +42,7 @@ function App() {
 
     // Phantom Wallet connection status listeners
     const provider = window.phantom?.solana;
-    
+
     if (provider) {
       // Listen for connection changes
       const handleConnect = (publicKey) => {
@@ -84,7 +84,7 @@ function App() {
     setWalletError(null);
     try {
       const provider = window.phantom?.solana;
-      
+
       if (!provider?.isPhantom) {
         throw new Error("Vui lòng cài đặt Phantom Wallet!");
       }
@@ -103,11 +103,11 @@ function App() {
       }
 
       setWalletAddress(publicKey.toString());
-      
+
       await getWalletBalance(publicKey);
     } catch (err) {
       console.error("Lỗi khi kết nối ví:", err);
-      
+
       // More specific error handling
       if (err.code === 4001) {
         // User rejected the request
@@ -163,7 +163,7 @@ function App() {
             {isMobile && isSidebarOpen && (
               <div className="sidebar-overlay" onClick={toggleSidebar}></div>
             )}
-            
+
             {/* Sidebar */}
             <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
               <div className="sidebar-header">
@@ -172,7 +172,7 @@ function App() {
                   Solana UDPM 11
                 </h3>
                 {isMobile && (
-                  <button 
+                  <button
                     className="btn btn-link close-sidebar"
                     onClick={toggleSidebar}
                   >
@@ -211,18 +211,18 @@ function App() {
               {/* Top Navigation */}
               <nav className="top-nav">
                 <div className="d-flex align-items-center">
-                  <button 
+                  <button
                     className="btn btn-link menu-toggle"
                     onClick={toggleSidebar}
                   >
                     <i className="bi bi-list fs-4"></i>
                   </button>
-                  
+
                   {/* Wallet Connection Button */}
                   {!walletAddress ? (
-                    <Button 
-                      variant="outline-primary" 
-                      onClick={connectWallet} 
+                    <Button
+                      variant="outline-primary"
+                      onClick={connectWallet}
                       disabled={walletLoading}
                       className="ms-3"
                     >
@@ -238,14 +238,14 @@ function App() {
                   ) : (
                     <div className="ms-3 d-flex align-items-center">
                       <span className="me-2 text-muted">
-                        Số dư: 
+                        Số dư:
                         <span className="fw-bold text-dark ms-1">
                           {walletBalance.toFixed(2)} SOL
                         </span>
                       </span>
-                      <Button 
-                        variant="outline-danger" 
-                        size="sm" 
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
                         onClick={disconnectWallet}
                       >
                         Ngắt kết nối
@@ -259,11 +259,11 @@ function App() {
                     </div>
                   )}
                 </div>
-                
+
                 <Dropdown>
-                  <Dropdown.Toggle 
-                    variant="link" 
-                    id="user-dropdown" 
+                  <Dropdown.Toggle
+                    variant="link"
+                    id="user-dropdown"
                     className="d-flex align-items-center text-dark text-decoration-none"
                   >
                     <i className="bi bi-person-circle me-2"></i>
@@ -288,7 +288,7 @@ function App() {
               <div className="content-area">
                 <Routes>
                   <Route path="/" element={<Navigate to="/home" replace />} />
-                  <Route path="/home" element={<Home />} />
+                  <Route path="/home" element={<Home referenceId={userData?.referenceId} />} /> {/* Chèn ở đây */}
                   <Route path="/my-nfts" element={<MyNfts referenceId={userData?.referenceId} />} />
                   <Route
                     path="/user"

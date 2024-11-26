@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { apiKey } from '../api';
-import { Card, Button, Modal, Spinner } from 'react-bootstrap';
+import { Card, Button, Modal, Spinner, Alert } from 'react-bootstrap';
 
-const MarketplaceHome = () => {
+const MarketplaceHome = ({ referenceId }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [buyLoading, setBuyLoading] = useState(false);
+  const [buyError, setBuyError] = useState(null);
 
   useEffect(() => {
     fetchItems();
@@ -22,11 +24,12 @@ const MarketplaceHome = () => {
         }
       });
 
-      // Lọc và loại bỏ SOL, USDC và các sản phẩm chưa có giá
+      // Lọc và loại bỏ SOL, USDC, sản phẩm chưa có giá và sản phẩm của chính người dùng
       const filteredItems = response.data.data.filter(
-        item => 
-          item.type === 'UniqueAsset' && 
-          item.item.priceCents !== null
+        itemData => 
+          itemData.type === 'UniqueAsset' && 
+          itemData.item.priceCents !== null &&
+          itemData.item.ownerId !== referenceId
       );
 
       setItems(filteredItems);
@@ -43,6 +46,57 @@ const MarketplaceHome = () => {
 
   const closeModal = () => {
     setSelectedItem(null);
+    setBuyError(null);
+  };
+
+  const buyItemWithPhantomWallet = async () => {
+    setBuyLoading(true);
+    setBuyError(null);
+
+    try {
+      // Kiểm tra kết nối ví Phantom
+      const provider = window.phantom?.solana;
+      if (!provider || !provider.isConnected) {
+        throw new Error("Vui lòng kết nối ví Phantom trước khi mua");
+      }
+
+      // Gọi API để tạo giao dịch mua
+      const response = await axios.post(
+        `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/buy`, 
+        {
+          // Sử dụng referenceId làm buyerId
+          buyerId: referenceId
+        },
+        {
+          headers: {
+            'accept': 'application/json', 
+            'content-type': 'application/json',
+            'x-api-key': apiKey
+          }
+        }
+      );
+
+      const { transactionId, consentUrl } = response.data;
+
+      // Mở URL consent để hoàn tất thanh toán
+      window.open(consentUrl, '_blank');
+
+      // Đóng modal sau khi mở consent URL
+      closeModal();
+
+      // Làm mới danh sách sản phẩm sau khi mua
+      fetchItems();
+    } catch (err) {
+      console.error('Lỗi mua sản phẩm:', err);
+      
+      const errorMessage = err.response?.data?.message || 
+                           err.message || 
+                           'Không thể thực hiện giao dịch. Vui lòng thử lại.';
+      
+      setBuyError(errorMessage);
+    } finally {
+      setBuyLoading(false);
+    }
   };
 
   if (loading) {
@@ -65,7 +119,7 @@ const MarketplaceHome = () => {
   if (items.length === 0) {
     return (
       <div className="container text-center py-5">
-        <h2 className="text-muted">Hiện tại chưa có sản phẩm nào được bán</h2>
+        <h2 className="text-muted">Hiện tại chưa có sản phẩm nào để mua</h2>
         <p className="lead">Vui lòng quay lại sau</p>
       </div>
     );
@@ -141,14 +195,38 @@ const MarketplaceHome = () => {
               <p className="fw-bold">
                 Giá: ${(selectedItem.priceCents / 100).toFixed(2)} USDC
               </p>
+
+              {buyError && (
+                <Alert variant="danger" className="mt-3">
+                  {buyError}
+                </Alert>
+              )}
             </div>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={closeModal}>
+            <Button variant="secondary" onClick={closeModal} disabled={buyLoading}>
               Hủy
             </Button>
-            <Button variant="primary" onClick={() => alert('Chức năng mua đang được phát triển')}>
-              Xác nhận mua
+            <Button 
+              variant="primary" 
+              onClick={buyItemWithPhantomWallet} 
+              disabled={buyLoading}
+            >
+              {buyLoading ? (
+                <>
+                  <Spinner 
+                    as="span" 
+                    animation="border" 
+                    size="sm" 
+                    role="status" 
+                    aria-hidden="true"
+                    className="me-2"
+                  />
+                  Đang xử lý...
+                </>
+              ) : (
+                'Xác nhận mua'
+              )}
             </Button>
           </Modal.Footer>
         </Modal>
