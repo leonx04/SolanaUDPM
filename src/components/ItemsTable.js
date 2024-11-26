@@ -25,6 +25,11 @@ const ItemsTable = ({ ownerReferenceId }) => {
     // Thêm vào các state khác của component
     const [editImageFile, setEditImageFile] = useState(null);
     const [editImagePreview, setEditImagePreview] = useState(null);
+    //Thêm state để quản lý loại tiền tệ:
+    const [selectedCurrency, setSelectedCurrency] = useState('USDC');
+    const availableCurrencies = items
+        .filter(item => item.type === 'Currency')
+        .map(item => item.item);
 
     // Thêm ở đầu file, ngay sau các import
     const CLOUDINARY_UPLOAD_PRESET = 'ARTSOLANA';
@@ -140,7 +145,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
 
     // Hàm xử lý liệt kê tài sản bán
     const handleListForSale = async () => {
-        // Kiểm tra tính hợp lệ của giá
         if (!selectedItem || !listingPrice) {
             setListingError('Vui lòng nhập giá hợp lệ');
             return;
@@ -150,7 +154,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
         setListingError(null);
 
         try {
-            // Gọi API để liệt kê tài sản
             const response = await fetch(
                 `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/list-for-sale`,
                 {
@@ -162,7 +165,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     },
                     body: JSON.stringify({
                         price: {
-                            currencyId: 'USDC',
+                            currencyId: selectedCurrency, // Sử dụng selectedCurrency thay vì hardcode
                             naturalAmount: listingPrice
                         }
                     })
@@ -176,9 +179,9 @@ const ItemsTable = ({ ownerReferenceId }) => {
 
             const data = await response.json();
 
-            // Chuyển hướng người dùng đến URL đồng ý
+            // Thay vì window.location.href, mở tab mới
             if (data.consentUrl) {
-                window.location.href = data.consentUrl;
+                window.open(data.consentUrl, '_blank', 'noopener,noreferrer');
             }
 
             // Làm mới danh sách sau khi liệt kê
@@ -190,7 +193,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
             setShowListingModal(false);
         }
     };
-
     // Hàm xử lý hủy bán tài sản
     const handleCancelSale = async (itemId) => {
         setIsProcessing(true);
@@ -234,6 +236,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
     const openListingModal = (item) => {
         setSelectedItem(item);
         setListingPrice('');
+        setSelectedCurrency(availableCurrencies[0]?.id || 'USDC');
         setListingError(null);
         setShowListingModal(true);
     };
@@ -587,18 +590,30 @@ const ItemsTable = ({ ownerReferenceId }) => {
                         </Form.Group>
 
                         <Form.Group className="mt-3">
-                            <Form.Label>Giá (USDC)</Form.Label>
+                            <Form.Label>Loại Tiền</Form.Label>
+                            <Form.Select
+                                value={selectedCurrency}
+                                onChange={(e) => setSelectedCurrency(e.target.value)}
+                                disabled={isProcessing}
+                            >
+                                {availableCurrencies.map(currency => (
+                                    <option key={currency.id} value={currency.id}>
+                                        {currency.symbol}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+
+                        <Form.Group className="mt-3">
+                            <Form.Label>Giá ({selectedCurrency})</Form.Label>
                             <Form.Control
                                 type="number"
-                                placeholder="Nhập giá"
+                                placeholder={`Nhập giá (${selectedCurrency})`}
                                 value={listingPrice}
                                 onChange={(e) => setListingPrice(e.target.value)}
                                 min="0.01"
                                 step="0.01"
                             />
-                            <Form.Text className="text-muted">
-                                Nhập giá bán tài sản bằng USDC
-                            </Form.Text>
                         </Form.Group>
                     </Form>
                 </Modal.Body>
