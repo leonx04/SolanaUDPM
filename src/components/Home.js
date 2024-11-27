@@ -283,24 +283,29 @@ const MarketplaceHome = ({ referenceId }) => {
             const item = itemData.item;
             return (
               <div key={item.id} className="col">
-                <Card className="h-100 shadow-sm hover-lift">
+                <Card className="h-100 d-flex flex-column shadow-sm hover-lift">
                   <Card.Img
                     variant="top"
                     src={item.imageUrl || '/default-image.jpg'}
                     alt={item.name || 'Hình ảnh sản phẩm'}
                     className="card-img-top"
                     style={{
-                      height: '250px',
-                      objectFit: 'cover'
+                      width: '100%',
+                      height: 'auto',
+                      aspectRatio: '16/9',
+                      objectFit: 'cover',
                     }}
                   />
-                  <Card.Body>
+                  <Card.Body style={{ flex: 1 }}>
                     <Card.Title className="fw-bold">{item.name}</Card.Title>
-                    <Card.Text className="theme-text text-muted mb-2">
+                    <Card.Text
+                      className="theme-text text-muted mb-2"
+                      style={{ minHeight: '60px' }}
+                    >
                       {item.description || 'Không có mô tả'}
                     </Card.Text>
 
-                    <div className="d-flex justify-content-between align-items-center">
+                    <div className="d-flex justify-content-between align-items-center mt-auto">
                       <div>
                         <span className="badge bg-primary">
                           {`$${(item.priceCents / 100).toFixed(2)} USDC`}
@@ -319,6 +324,7 @@ const MarketplaceHome = ({ referenceId }) => {
             );
           })}
         </div>
+
       </div>
 
       {/* Modal mua hàng */}

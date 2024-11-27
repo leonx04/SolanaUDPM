@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
-import { Dropdown, Button } from 'react-bootstrap';
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import {
+  clusterApiUrl,
   Connection,
   LAMPORTS_PER_SOL,
-  clusterApiUrl,
   PublicKey
 } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import 'bootstrap-icons/font/bootstrap-icons.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { useEffect, useState } from "react";
+import { Button, Dropdown } from 'react-bootstrap';
+import { Link, Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import './App.css';
+import AuthForm from "./components/AuthForm";
 import Home from "./components/Home";
 import MyNfts from "./components/MyNfts";
 import User from "./components/User";
-import AuthForm from "./components/AuthForm";
-import './App.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Địa chỉ token USDC chính thức trên Solana devnet
-const USDC_MINT_ADDRESS = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+const USDC_MINT_ADDRESS = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
 
 // Hàm lấy số dư USDC
 const getUsdcBalance = async (connection, walletPublicKey) => {
