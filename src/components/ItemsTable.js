@@ -115,10 +115,14 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     params.append('forSale', 'true');
                     break;
                 case 'notForSale':
-                    params.append('forSale', 'false');
+                    params.append('priceCents', 'null'); // Kiểm tra giá trị priceCents là null
+                    break;
+                default:
+                    // Trường hợp tất cả
                     break;
             }
 
+            // Xây dựng URL với các tham số tìm nạp
             url += `?${params.toString()}`;
 
             // Gọi API để lấy danh sách items
@@ -129,18 +133,30 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 }
             });
 
+            // Kiểm tra phản hồi của API
             if (!response.ok) {
                 throw new Error('Không thể tải danh sách items');
             }
 
+            // Chuyển đổi dữ liệu nhận được thành JSON
             const data = await response.json();
-            setItems(data.data || []);
+
+            // Lọc lại danh sách nếu cần thiết
+            if (marketFilter === 'notForSale') {
+                setItems(data.data.filter(item => item.item.priceCents === null));
+            } else {
+                setItems(data.data || []);
+            }
+
         } catch (err) {
             setError('Lỗi khi tải items: ' + err.message);
         } finally {
             setLoading(false);
         }
     };
+
+
+
 
     // Tính toán các giá trị phân trang
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -553,6 +569,8 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                     <tbody>
                                         {currentItems.map((itemData, index) => {
                                             const { type, item } = itemData;
+                                            if (type === 'Currency') return null;  // Ẩn các item loại Currency
+
                                             return (
                                                 <tr key={index}>
                                                     {/* Các cột thông tin */}
@@ -583,13 +601,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                                         <small className="text-muted">ID: {truncateText(item.id, 15)}</small>
                                                     </td>
                                                     <td>
-                                                        {type === 'Currency' ? (
-                                                            <div>
-                                                                <span className="badge bg-light text-dark">
-                                                                    Decimals: {item.decimals}
-                                                                </span>
-                                                            </div>
-                                                        ) : (
+                                                        {type !== 'Currency' && (
                                                             <div className="text-truncate" style={{ maxWidth: '200px' }} title={item.description}>
                                                                 {item.description || '-'}
                                                             </div>
@@ -645,6 +657,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                             );
                                         })}
                                     </tbody>
+
                                 </table>
                             </div>
                         </div>
