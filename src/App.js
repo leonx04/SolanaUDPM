@@ -19,33 +19,6 @@ import User from "./components/User";
 // Địa chỉ token USDC chính thức trên Solana devnet
 const USDC_MINT_ADDRESS = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
 
-// Hàm lấy số dư USDC
-const getUsdcBalance = async (connection, walletPublicKey) => {
-  try {
-    // Tìm tài khoản token của ví
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-      walletPublicKey,
-      { programId: TOKEN_PROGRAM_ID }
-    );
-
-    // Tìm tài khoản USDC
-    const usdcAccount = tokenAccounts.value.find(
-      (account) => account.account.data.parsed.info.mint === USDC_MINT_ADDRESS.toBase58()
-    );
-
-    // Trả về số dư USDC
-    if (usdcAccount) {
-      const usdcBalance = usdcAccount.account.data.parsed.info.tokenAmount.uiAmount;
-      return usdcBalance;
-    }
-
-    return 0; // Trả về 0 nếu không có tài khoản USDC
-  } catch (error) {
-    console.error('Lỗi khi lấy số dư USDC:', error);
-    return null;
-  }
-};
-
 function App() {
   const isPhantomInstalled = window.phantom?.solana?.isPhantom;
   const [userData, setUserData] = useState(null);
@@ -99,6 +72,35 @@ function App() {
       }
     }
   };
+
+
+  // Hàm lấy số dư USDC
+  const getUsdcBalance = async (connection, walletPublicKey) => {
+    try {
+      // Tìm tài khoản token của ví
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+        walletPublicKey,
+        { programId: TOKEN_PROGRAM_ID }
+      );
+
+      // Tìm tài khoản USDC
+      const usdcAccount = tokenAccounts.value.find(
+        (account) => account.account.data.parsed.info.mint === USDC_MINT_ADDRESS.toBase58()
+      );
+
+      // Trả về số dư USDC
+      if (usdcAccount) {
+        const usdcBalance = usdcAccount.account.data.parsed.info.tokenAmount.uiAmount;
+        return usdcBalance;
+      }
+
+      return 0; // Trả về 0 nếu không có tài khoản USDC
+    } catch (error) {
+      console.error('Lỗi khi lấy số dư USDC:', error);
+      return null;
+    }
+  };
+
 
   useEffect(() => {
     const handleResize = () => {
