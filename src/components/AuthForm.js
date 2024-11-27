@@ -1,43 +1,78 @@
 import axios from 'axios';
+import 'driver.js/dist/driver.css';
 import React, { useEffect, useState } from 'react';
+import { driver as Driver } from 'driver.js';
 import { apiKey } from '../api';
 import unidecode from 'unidecode';
 
 const apiBaseUrl = "https://api.gameshift.dev/nx/users";
 
 const AuthForm = ({ setIsLoggedIn, setUserData }) => {
-  // Quản lý trạng thái dữ liệu biểu mẫu
+  // Trạng thái quản lý dữ liệu biểu mẫu
   const [formData, setFormData] = useState({
-    referenceId: '',
-    email: '',
-    externalWalletAddress: ''
+    referenceId: '',  // Mã định danh duy nhất của người dùng
+    email: '',        // Địa chỉ email để xác thực
+    externalWalletAddress: ''  // Địa chỉ ví Solana khi đăng ký
   });
 
-  // Trạng thái xem người dùng đang đăng ký hay đăng nhập
+  // Các trạng thái quản lý giao diện và logic
   const [isRegistering, setIsRegistering] = useState(false);
-
-  // Quản lý trạng thái thông báo lỗi và thành công
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-
-  // Quản lý trạng thái hiển thị biểu mẫu
   const [isFormVisible, setIsFormVisible] = useState(true);
-
-  // Trạng thái tải trong quá trình gửi yêu cầu
   const [isLoading, setIsLoading] = useState(false);
-
-  // Kiểm tra xem Phantom Wallet đã được cài đặt hay chưa
   const [isPhantomInstalled, setIsPhantomInstalled] = useState(false);
 
+  // Kiểm tra và khởi tạo hướng dẫn khi component được tải
   useEffect(() => {
-    // Kiểm tra nếu Phantom Wallet có sẵn trong trình duyệt
     const checkPhantomWallet = () => {
       const { solana } = window;
       setIsPhantomInstalled(!!(solana && solana.isPhantom));
     };
 
-    checkPhantomWallet(); // Gọi hàm kiểm tra khi component được mount
+    checkPhantomWallet();
+    initializeDriverGuide();
   }, []);
+
+  // Hàm khởi tạo hướng dẫn từng bước
+  const initializeDriverGuide = () => {
+    const driver = new Driver({
+      animate: true,
+      opacity: 0.75,
+      nextBtnText: 'Tiếp theo',
+      prevBtnText: 'Quay lại',
+      doneBtnText: 'Hoàn tất',
+      steps: [
+        {
+          element: '#referenceId-input',
+          popover: {
+            title: 'Reference ID',
+            description: 'Nhập mã tham chiếu duy nhất. Đây là mã định danh tài khoản của bạn trong hệ thống.',
+            position: 'bottom'
+          }
+        },
+        {
+          element: '#email-input',
+          popover: {
+            title: 'Email',
+            description: 'Điền địa chỉ email chính xác. Email này sẽ được sử dụng để xác thực và khôi phục tài khoản.',
+            position: 'bottom'
+          }
+        },
+        {
+          element: '#auth-button',
+          popover: {
+            title: 'Xác thực Tài khoản',
+            description: 'Nhấn nút để hoàn tất quá trình đăng ký hoặc đăng nhập. Lưu ý đăng ký cần kết nối Phantom Wallet.',
+            position: 'top'
+          }
+        }
+      ]
+    });
+
+    // Tự động bắt đầu hướng dẫn khi trang được tải
+    driver.drive();
+  };
 
   // Kết nối với Phantom Wallet
   const connectPhantomWallet = async () => {
@@ -47,7 +82,6 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
     }
 
     try {
-      // Thực hiện kết nối và trả về địa chỉ ví
       const resp = await window.solana.connect();
       return resp.publicKey.toString();
     } catch (err) {
@@ -86,13 +120,13 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
   const handleAction = async (isRegister) => {
     if (!validateForm()) return;
 
-    setIsLoading(true); // Hiển thị trạng thái loading
+    setIsLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
 
     try {
       if (isRegister) {
-        // Nếu đăng ký, kết nối Phantom Wallet trước
+        // Quy trình đăng ký chi tiết
         const walletAddress = await connectPhantomWallet();
         if (!walletAddress) {
           setIsLoading(false);
@@ -122,7 +156,7 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
 
         setSuccessMessage('Đăng ký thành công!');
       } else {
-        // Xử lý đăng nhập
+        // Quy trình đăng nhập
         const config = {
           headers: {
             'accept': 'application/json',
@@ -139,7 +173,7 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
         setSuccessMessage('Đăng nhập thành công!');
       }
 
-      // Cập nhật trạng thái và lưu thông tin người dùng sau khi thành công
+      // Cập nhật trạng thái sau khi thành công
       setTimeout(() => {
         setUserData(formData);
         setIsLoggedIn(true);
@@ -153,10 +187,11 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
           : 'Đã xảy ra lỗi. Vui lòng thử lại sau.'
       );
     } finally {
-      setIsLoading(false); // Tắt trạng thái loading
+      setIsLoading(false);
     }
   };
 
+  // Render spinner khi form ẩn
   if (!isFormVisible) {
     return (
       <div className="position-absolute top-50 start-50 translate-middle text-center">
@@ -168,7 +203,6 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
   }
 
   return (
-    // Phần giao diện hiển thị form
     <div className="vh-100 d-flex align-items-center justify-content-center bg-light">
       <div className="container">
         <div className="row justify-content-center">
@@ -188,6 +222,7 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
               <form>
                 <div className="mb-3">
                   <input
+                    id="referenceId-input"
                     type="text"
                     className="form-control form-control-lg bg-light border-0 rounded-3"
                     placeholder="Tên tài khoản"
@@ -200,6 +235,7 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
 
                 <div className="mb-4">
                   <input
+                    id="email-input"
                     type="email"
                     className="form-control form-control-lg bg-light border-0 rounded-3"
                     placeholder="Email"
@@ -217,6 +253,7 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
                 )}
 
                 <button
+                  id="auth-button"
                   type="button"
                   className={`btn ${isRegistering ? 'btn-dark' : 'btn-primary'} w-100 py-3 rounded-3 position-relative overflow-hidden`}
                   onClick={() => handleAction(isRegistering)}
