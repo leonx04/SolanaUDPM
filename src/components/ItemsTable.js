@@ -534,19 +534,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     .table-hover tbody tr:hover {
                         background-color: rgba(0, 0, 0, 0.02);
                     }
-
-                    .mint-address {
-                        font-family: monospace;
-                        font-size: 0.875em;
-                        background-color: #f8f9fa;
-                        padding: 0.2em 0.4em;
-                        border-radius: 3px;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        max-width: 150px;
-                        display: inline-block;
-                    }
                     `}
                             </style>
                             <div className="mobile-table-wrapper">
@@ -559,7 +546,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                             <th style={{ width: '180px' }}>Tên</th>
                                             <th style={{ width: '200px' }}>Mô tả</th>
                                             <th style={{ width: '120px' }}>Trạng Thái Bán</th>
-                                            <th style={{ width: '200px' }}>Địa chỉ ví</th>
                                             <th style={{ width: '150px' }}>Hành Động</th>
                                         </tr>
                                     </thead>
@@ -619,11 +605,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                                         ) : (
                                                             <span className="badge bg-secondary">Chưa Bán</span>
                                                         )}
-                                                    </td>
-                                                    <td>
-                                                        <span className="mint-address" title={item.mintAddress}>
-                                                            {item.mintAddress}
-                                                        </span>
                                                     </td>
                                                     {/* Nút hành động */}
                                                     <td>
