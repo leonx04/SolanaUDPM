@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { Alert, Button, Card, Form, Modal, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
@@ -14,7 +14,7 @@ const usePagination = (items, initialPerPage = 10) => {
   const paginatedItems = useMemo(() => {
     const startIndex = (pagination.currentPage - 1) * pagination.perPage;
     const endIndex = startIndex + pagination.perPage;
-    
+
     return {
       currentItems: items.slice(startIndex, endIndex),
       totalPages: Math.ceil(items.length / pagination.perPage),
@@ -59,19 +59,19 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
           const isNext = index === 2;
           const isEnd = index === 3;
 
-          const isDisabled = 
-            (isStart || isBack) && currentPage === 1 ||
-            (isNext || isEnd) && currentPage === totalPages;
+          const isDisabled =
+            ((isStart || isBack) && currentPage === 1) ||
+            ((isNext || isEnd) && currentPage === totalPages);
 
-          const pageToGo = 
-            isStart ? 1 : 
-            isBack ? currentPage - 1 : 
-            isNext ? currentPage + 1 : 
-            totalPages;
+          const pageToGo =
+            isStart ? 1 :
+              isBack ? currentPage - 1 :
+                isNext ? currentPage + 1 :
+                  totalPages;
 
           return (
-            <li 
-              key={label} 
+            <li
+              key={label}
               className={`page-item ${isDisabled ? 'disabled' : ''}`}
             >
               <Button
@@ -106,7 +106,7 @@ const MarketplaceHome = ({ referenceId }) => {
 
   // Memoized filter function
   const filteredItems = useMemo(() => {
-    return allItems.filter(itemData => 
+    return allItems.filter(itemData =>
       itemData.type === 'UniqueAsset' &&
       itemData.item.priceCents !== null &&
       itemData.item.owner.referenceId !== referenceId
@@ -187,19 +187,21 @@ const MarketplaceHome = ({ referenceId }) => {
   };
 
   // Buy with Phantom Wallet
-  const buyItemWithPhantomWallet = async () => {
+  const buyItemWithPhantomWallet = async () => { 
     setBuyLoading(true);
     setBuyError(null);
-
+  
     try {
       const provider = window.phantom?.solana;
       if (!provider || !provider.isConnected) {
         throw new Error("Vui lòng kết nối ví Phantom trước khi mua");
       }
-
+  
       const response = await axios.post(
         `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/buy`,
-        { buyerId: referenceId },
+        {
+          buyerId: referenceId
+        },
         {
           headers: {
             'accept': 'application/json',
@@ -208,24 +210,24 @@ const MarketplaceHome = ({ referenceId }) => {
           }
         }
       );
-
-      const { transactionId, consentUrl } = response.data;
+  
+      // Bỏ qua transactionId, chỉ sử dụng consentUrl
+      const { consentUrl } = response.data;
       window.open(consentUrl, '_blank');
-      setSelectedItem(null);
-      
-      // Refresh items after successful purchase
       fetchAllItems();
     } catch (err) {
+      console.error('Lỗi mua sản phẩm:', err);
+  
       const errorMessage = err.response?.data?.message ||
         err.message ||
         'Không thể thực hiện giao dịch. Vui lòng thử lại.';
-
+  
       setBuyError(errorMessage);
-      console.error('Lỗi mua sản phẩm:', err);
     } finally {
       setBuyLoading(false);
     }
   };
+  
 
   // Render loading state
   if (loading) {
@@ -241,8 +243,8 @@ const MarketplaceHome = ({ referenceId }) => {
     return (
       <Alert variant="danger" className="text-center">
         {error}
-        <Button 
-          variant="outline-primary" 
+        <Button
+          variant="outline-primary"
           className="ms-3"
           onClick={() => fetchAllItems()}
         >
@@ -257,8 +259,8 @@ const MarketplaceHome = ({ referenceId }) => {
     return (
       <div className="container text-center py-5">
         <h2 className="text-muted">Hiện tại chưa có sản phẩm nào để mua</h2>
-        <Button 
-          variant="primary" 
+        <Button
+          variant="primary"
           onClick={() => fetchAllItems()}
         >
           Tải lại

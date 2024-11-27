@@ -7,7 +7,7 @@ import {
 } from '@solana/web3.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Dropdown } from 'react-bootstrap';
 import { Link, Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import './App.css';
@@ -28,36 +28,45 @@ function App() {
 
   // Theme state
   const [theme, setTheme] = useState(() => {
-    // Kiểm tra trạng thái theme từ localStorage
     const savedTheme = localStorage.getItem('app-theme');
     if (savedTheme) return savedTheme;
 
-    // Mặc định theo hệ thống
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
-  // Wallet state - Thêm state cho USDC
+  // Solana connection using useMemo inside the component
+  const connection = useMemo(() => new Connection(clusterApiUrl('devnet'), 'confirmed'), []);
+
+  // Wallet state 
   const [walletAddress, setWalletAddress] = useState(null);
   const [walletBalance, setWalletBalance] = useState(0);
-  const [usdcBalance, setUsdcBalance] = useState(null); // State mới cho USDC
+  const [usdcBalance, setUsdcBalance] = useState(null);
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletError, setWalletError] = useState(null);
 
-  // Solana connection
-  const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+  // Hàm lấy số dư USDC
+  const getUsdcBalance = async (connection, walletPublicKey) => {
+    try {
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+        walletPublicKey,
+        { programId: TOKEN_PROGRAM_ID }
+      );
 
-  // Hàm thay đổi theme
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('app-theme', newTheme);
+      const usdcAccount = tokenAccounts.value.find(
+        (account) => account.account.data.parsed.info.mint === USDC_MINT_ADDRESS.toBase58()
+      );
+
+      if (usdcAccount) {
+        const usdcBalance = usdcAccount.account.data.parsed.info.tokenAmount.uiAmount;
+        return usdcBalance;
+      }
+
+      return 0;
+    } catch (error) {
+      console.error('Lỗi khi lấy số dư USDC:', error);
+      return null;
+    }
   };
-
-  // Theo dõi theme và áp dụng class
-  useEffect(() => {
-    document.body.classList.remove('light-theme', 'dark-theme');
-    document.body.classList.add(`${theme}-theme`);
-  }, [theme]);
 
   // Hàm fetch số dư USDC
   const fetchUsdcBalance = useCallback(async () => {
@@ -71,37 +80,20 @@ function App() {
         setUsdcBalance(null);
       }
     }
-  }, [walletAddress, connection]); // Thêm dependencies
+  }, [walletAddress, connection]);
 
+  // Theo dõi theme và áp dụng class
+  useEffect(() => {
+    document.body.classList.remove('light-theme', 'dark-theme');
+    document.body.classList.add(`${theme}-theme`);
+  }, [theme]);
 
-
-  // Hàm lấy số dư USDC
-  const getUsdcBalance = async (connection, walletPublicKey) => {
-    try {
-      // Tìm tài khoản token của ví
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-        walletPublicKey,
-        { programId: TOKEN_PROGRAM_ID }
-      );
-
-      // Tìm tài khoản USDC
-      const usdcAccount = tokenAccounts.value.find(
-        (account) => account.account.data.parsed.info.mint === USDC_MINT_ADDRESS.toBase58()
-      );
-
-      // Trả về số dư USDC
-      if (usdcAccount) {
-        const usdcBalance = usdcAccount.account.data.parsed.info.tokenAmount.uiAmount;
-        return usdcBalance;
-      }
-
-      return 0; // Trả về 0 nếu không có tài khoản USDC
-    } catch (error) {
-      console.error('Lỗi khi lấy số dư USDC:', error);
-      return null;
-    }
+  // Hàm thay đổi theme
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('app-theme', newTheme);
   };
-
 
   useEffect(() => {
     const handleResize = () => {
@@ -121,10 +113,8 @@ function App() {
     const provider = window.phantom?.solana;
 
     if (provider) {
-      // Listen for connection changes
       const handleConnect = async (publicKey) => {
         console.log('Connected to wallet:', publicKey.toBase58());
-        // Tự động fetch USDC balance khi kết nối
         await fetchUsdcBalance();
       };
 
@@ -132,7 +122,7 @@ function App() {
         console.log('Disconnected from wallet');
         setWalletAddress(null);
         setWalletBalance(0);
-        setUsdcBalance(null); // Reset USDC balance
+        setUsdcBalance(null);
       };
 
       provider.on('connect', handleConnect);
@@ -222,7 +212,7 @@ function App() {
         await provider.disconnect();
         setWalletAddress(null);
         setWalletBalance(0);
-        setUsdcBalance(null); // Reset USDC balance
+        setUsdcBalance(null);
       }
     } catch (err) {
       console.error("Lỗi khi ngắt kết nối ví:", err);
