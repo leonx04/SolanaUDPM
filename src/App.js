@@ -267,10 +267,6 @@ function App() {
                     <i className="bi bi-collection me-2"></i>
                     NFT của tôi
                   </Link>
-                  <Link to="/user" className="nav-link" onClick={closeSidebarOnMobile}>
-                    <i className="bi bi-person me-2"></i>
-                    Người dùng
-                  </Link>
                 </div>
               </div>
 
@@ -365,10 +361,7 @@ function App() {
                   </Dropdown.Toggle>
 
                   <Dropdown.Menu>
-                    <Dropdown.Item as={Link} to="/user">
-                      <i className="bi bi-gear me-2"></i>
-                      Cài đặt
-                    </Dropdown.Item>
+                    
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={handleLogout} className="text-danger">
                       <i className="bi bi-box-arrow-right me-2"></i>
