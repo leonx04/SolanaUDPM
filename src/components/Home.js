@@ -1,66 +1,95 @@
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
-import React, { useState, useEffect, useCallback } from 'react';
 import { Alert, Button, Card, Form, Modal, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
-// Thành phần Pagination được cải tiến để xử lý các trường hợp edge case
+
+const usePagination = (items, initialPerPage = 10) => {
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    perPage: initialPerPage,
+    totalPages: 0,
+    totalResults: 0
+  });
+
+  const paginatedItems = useMemo(() => {
+    const startIndex = (pagination.currentPage - 1) * pagination.perPage;
+    const endIndex = startIndex + pagination.perPage;
+    
+    return {
+      currentItems: items.slice(startIndex, endIndex),
+      totalPages: Math.ceil(items.length / pagination.perPage),
+      totalResults: items.length
+    };
+  }, [items, pagination.currentPage, pagination.perPage]);
+
+  const changePage = useCallback((newPage) => {
+    setPagination(prev => ({
+      ...prev,
+      currentPage: newPage
+    }));
+  }, []);
+
+  const changePerPage = useCallback((newPerPage) => {
+    setPagination(prev => ({
+      ...prev,
+      perPage: newPerPage,
+      currentPage: 1
+    }));
+  }, []);
+
+  return {
+    ...pagination,
+    currentItems: paginatedItems.currentItems,
+    totalPages: paginatedItems.totalPages,
+    totalResults: paginatedItems.totalResults,
+    changePage,
+    changePerPage
+  };
+};
+
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
-  if (totalPages <= 1) {
-    return null;
-  }
+  if (totalPages <= 1) return null;
 
   return (
     <nav>
       <ul className="pagination mb-0">
-        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={() => onPageChange(1)}
-            disabled={currentPage === 1}
-          >
-            Đầu
-          </Button>
-        </li>
+        {['Đầu', 'Trước', 'Tiếp', 'Cuối'].map((label, index) => {
+          const isStart = index === 0;
+          const isBack = index === 1;
+          const isNext = index === 2;
+          const isEnd = index === 3;
 
-        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            className="ms-2"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Trước
-          </Button>
-        </li>
+          const isDisabled = 
+            (isStart || isBack) && currentPage === 1 ||
+            (isNext || isEnd) && currentPage === totalPages;
 
+          const pageToGo = 
+            isStart ? 1 : 
+            isBack ? currentPage - 1 : 
+            isNext ? currentPage + 1 : 
+            totalPages;
+
+          return (
+            <li 
+              key={label} 
+              className={`page-item ${isDisabled ? 'disabled' : ''}`}
+            >
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className={index > 0 ? 'ms-2' : ''}
+                onClick={() => onPageChange(pageToGo)}
+                disabled={isDisabled}
+              >
+                {label}
+              </Button>
+            </li>
+          );
+        })}
         <li className="page-item mx-2">
           <span className="page-link">
             Trang {currentPage} / {totalPages}
           </span>
-        </li>
-
-        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Tiếp
-          </Button>
-        </li>
-
-        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            className="ms-2"
-            onClick={() => onPageChange(totalPages)}
-            disabled={currentPage === totalPages}
-          >
-            Cuối
-          </Button>
         </li>
       </ul>
     </nav>
@@ -69,40 +98,30 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 
 const MarketplaceHome = ({ referenceId }) => {
   const [allItems, setAllItems] = useState([]);
-  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [buyLoading, setBuyLoading] = useState(false);
   const [buyError, setBuyError] = useState(null);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 0,
-    totalResults: 0,
-    perPage: 10,
-  });
 
-  // Hàm lọc các sản phẩm
-  const filterItems = (itemData) => {
-    return (
+  // Memoized filter function
+  const filteredItems = useMemo(() => {
+    return allItems.filter(itemData => 
       itemData.type === 'UniqueAsset' &&
       itemData.item.priceCents !== null &&
       itemData.item.owner.referenceId !== referenceId
     );
-  };
+  }, [allItems, referenceId]);
 
-  // Lấy toàn bộ danh sách sản phẩm
-  const fetchItems = useCallback(async () => {
+  // Optimized fetch function with cancellation
+  const fetchAllItems = useCallback(async (signal) => {
     setLoading(true);
     setError(null);
 
     try {
-      let allFetchedItems = [];
-      let page = 1;
-      let totalPages = 1;
-
-      while (page <= totalPages) {
+      const fetchPage = async (page) => {
         const response = await axios.get('https://api.gameshift.dev/nx/items', {
+          signal,
           params: {
             perPage: 100,
             page: page,
@@ -113,66 +132,61 @@ const MarketplaceHome = ({ referenceId }) => {
             'x-api-key': apiKey,
           },
         });
+        return response.data;
+      };
 
-        allFetchedItems = [...allFetchedItems, ...response.data.data];
-        totalPages = response.data.meta.totalPages;
+      let allFetchedItems = [];
+      let page = 1;
+      let totalPages = 1;
+
+      while (page <= totalPages) {
+        const { data, meta } = await fetchPage(page);
+        allFetchedItems.push(...data);
+        totalPages = meta.totalPages;
         page++;
       }
 
-      const filteredItems = allFetchedItems.filter(filterItems);
-
-      setAllItems(filteredItems);
-      updatePaginatedItems(filteredItems, pagination.perPage, 1);
+      setAllItems(allFetchedItems);
     } catch (err) {
-      setError('Không thể tải danh sách sản phẩm');
+      if (axios.isCancel(err)) {
+        console.log('Request canceled', err.message);
+      } else {
+        setError('Không thể tải danh sách sản phẩm: ' + err.message);
+        console.error('Fetch error:', err);
+      }
     } finally {
       setLoading(false);
     }
-  }, [filterItems, pagination.perPage]); // Thêm các dependencies cần thiết
+  }, []);
 
-  // Cập nhật items phân trang
-  const updatePaginatedItems = (fullItemsList, perPage, currentPage) => {
-    const startIndex = (currentPage - 1) * perPage;
-    const endIndex = startIndex + perPage;
-
-    const paginatedItems = fullItemsList.slice(startIndex, endIndex);
-
-    setItems(paginatedItems);
-    setPagination({
-      currentPage: currentPage,
-      totalPages: Math.ceil(fullItemsList.length / perPage),
-      totalResults: fullItemsList.length,
-      perPage: perPage,
-    });
-  };
-
-  // Tải dữ liệu ban đầu
+  // Fetch data with cleanup
   useEffect(() => {
-    fetchAllItems();
+    const controller = new AbortController();
+    fetchAllItems(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
   }, [fetchAllItems]);
 
-  // Xử lý thay đổi số lượng items trên trang
-  const handlePerPageChange = (newPerPage) => {
-    updatePaginatedItems(allItems, newPerPage, 1);
-  };
+  // Pagination hook
+  const {
+    currentItems,
+    currentPage,
+    totalPages,
+    totalResults,
+    perPage,
+    changePage,
+    changePerPage
+  } = usePagination(filteredItems);
 
-  // Xử lý chuyển trang
-  const handlePageChange = (newPage) => {
-    updatePaginatedItems(allItems, pagination.perPage, newPage);
-  };
-
-  // Xử lý mở modal mua
-  const handleBuyItem = (item) => {
+  // Buy item handler
+  const handleBuyItem = async (item) => {
     setSelectedItem(item);
-  };
-
-  // Đóng modal
-  const closeModal = () => {
-    setSelectedItem(null);
     setBuyError(null);
   };
 
-  // Mua item bằng Phantom Wallet
+  // Buy with Phantom Wallet
   const buyItemWithPhantomWallet = async () => {
     setBuyLoading(true);
     setBuyError(null);
@@ -185,9 +199,7 @@ const MarketplaceHome = ({ referenceId }) => {
 
       const response = await axios.post(
         `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/buy`,
-        {
-          buyerId: referenceId
-        },
+        { buyerId: referenceId },
         {
           headers: {
             'accept': 'application/json',
@@ -199,22 +211,23 @@ const MarketplaceHome = ({ referenceId }) => {
 
       const { transactionId, consentUrl } = response.data;
       window.open(consentUrl, '_blank');
-      closeModal();
+      setSelectedItem(null);
+      
+      // Refresh items after successful purchase
       fetchAllItems();
     } catch (err) {
-      console.error('Lỗi mua sản phẩm:', err);
-
       const errorMessage = err.response?.data?.message ||
         err.message ||
         'Không thể thực hiện giao dịch. Vui lòng thử lại.';
 
       setBuyError(errorMessage);
+      console.error('Lỗi mua sản phẩm:', err);
     } finally {
       setBuyLoading(false);
     }
   };
 
-  // Trạng thái tải
+  // Render loading state
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -223,43 +236,55 @@ const MarketplaceHome = ({ referenceId }) => {
     );
   }
 
-  // Trạng thái lỗi
+  // Render error state
   if (error) {
     return (
-      <div className="alert alert-danger text-center" role="alert">
+      <Alert variant="danger" className="text-center">
         {error}
-      </div>
+        <Button 
+          variant="outline-primary" 
+          className="ms-3"
+          onClick={() => fetchAllItems()}
+        >
+          Thử lại
+        </Button>
+      </Alert>
     );
   }
 
-  // Không có sản phẩm
-  if (allItems.length === 0) {
+  // Render empty state
+  if (filteredItems.length === 0) {
     return (
       <div className="container text-center py-5">
         <h2 className="text-muted">Hiện tại chưa có sản phẩm nào để mua</h2>
-        <p className="lead">Vui lòng quay lại sau</p>
+        <Button 
+          variant="primary" 
+          onClick={() => fetchAllItems()}
+        >
+          Tải lại
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="container-fluid py-5 ">
+    <div className="container-fluid py-5">
       <div className="container">
         <h1 className="text-center mb-5 display-4 fw-bold text-primary">
           Marketplace Unique Assets
         </h1>
 
-        {/* Phần điều khiển phân trang và số lượng hiển thị */}
+        {/* Pagination and display controls */}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <div className="d-flex align-items-center">
             <span className="me-3">
-              Hiển thị: {items.length} / {pagination.totalResults} sản phẩm
+              Hiển thị: {currentItems.length} / {totalResults} sản phẩm
             </span>
             <Form.Select
               size="sm"
               style={{ width: 'auto' }}
-              value={pagination.perPage}
-              onChange={(e) => handlePerPageChange(Number(e.target.value))}
+              value={perPage}
+              onChange={(e) => changePerPage(Number(e.target.value))}
             >
               {[5, 10, 20, 50].map((num) => (
                 <option key={num} value={num}>
@@ -269,17 +294,16 @@ const MarketplaceHome = ({ referenceId }) => {
             </Form.Select>
           </div>
 
-          {/* Thành phần Pagination */}
           <Pagination
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            onPageChange={handlePageChange}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={changePage}
           />
         </div>
 
-        {/* Danh sách sản phẩm */}
+        {/* Product grid */}
         <div className="row row-cols-1 row-cols-md-3 g-4">
-          {items.map((itemData) => {
+          {currentItems.map((itemData) => {
             const item = itemData.item;
             return (
               <div key={item.id} className="col">
@@ -313,7 +337,7 @@ const MarketplaceHome = ({ referenceId }) => {
                       </div>
                       <Button
                         variant="outline-primary"
-                        onClick={() => handleBuyItem(item)}
+                        onClick={() => handleBuyItem(itemData.item)}
                       >
                         Mua ngay
                       </Button>
@@ -324,12 +348,11 @@ const MarketplaceHome = ({ referenceId }) => {
             );
           })}
         </div>
-
       </div>
 
-      {/* Modal mua hàng */}
+      {/* Purchase Confirmation Modal */}
       {selectedItem && (
-        <Modal show={!!selectedItem} onHide={closeModal}>
+        <Modal show={!!selectedItem} onHide={() => setSelectedItem(null)}>
           <Modal.Header closeButton>
             <Modal.Title>Xác nhận mua {selectedItem.name}</Modal.Title>
           </Modal.Header>
@@ -354,7 +377,7 @@ const MarketplaceHome = ({ referenceId }) => {
             </div>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={closeModal} disabled={buyLoading}>
+            <Button variant="secondary" onClick={() => setSelectedItem(null)} disabled={buyLoading}>
               Hủy
             </Button>
             <Button
