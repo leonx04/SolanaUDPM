@@ -115,10 +115,14 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     params.append('forSale', 'true');
                     break;
                 case 'notForSale':
-                    params.append('forSale', 'false');
+                    params.append('priceCents', 'null'); // Kiểm tra giá trị priceCents là null
+                    break;
+                default:
+                    // Trường hợp tất cả
                     break;
             }
 
+            // Xây dựng URL với các tham số tìm nạp
             url += `?${params.toString()}`;
 
             // Gọi API để lấy danh sách items
@@ -129,18 +133,30 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 }
             });
 
+            // Kiểm tra phản hồi của API
             if (!response.ok) {
                 throw new Error('Không thể tải danh sách items');
             }
 
+            // Chuyển đổi dữ liệu nhận được thành JSON
             const data = await response.json();
-            setItems(data.data || []);
+
+            // Lọc lại danh sách nếu cần thiết
+            if (marketFilter === 'notForSale') {
+                setItems(data.data.filter(item => item.item.priceCents === null));
+            } else {
+                setItems(data.data || []);
+            }
+
         } catch (err) {
             setError('Lỗi khi tải items: ' + err.message);
         } finally {
             setLoading(false);
         }
     };
+
+
+
 
     // Tính toán các giá trị phân trang
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -304,9 +320,9 @@ const ItemsTable = ({ ownerReferenceId }) => {
         setListingError(null);
 
         try {
-            // Gọi API để hủy bán tài sản với URL mới
+            // Gọi API để hủy bán tài sản với URL mới cho unique assets
             const response = await fetch(
-                `https://api.gameshift.dev/assets/${itemId}/cancel-listing`, // Thay đổi URL endpoint
+                `https://api.gameshift.dev/nx/unique-assets/${itemId}/cancel-listing`,
                 {
                     method: 'POST',
                     headers: {
@@ -323,9 +339,9 @@ const ItemsTable = ({ ownerReferenceId }) => {
 
             const data = await response.json();
 
-            // Chuyển hướng người dùng đến URL đồng ý
+            // Mở URL đồng ý trong tab mới thay vì chuyển hướng
             if (data.consentUrl) {
-                window.location.href = data.consentUrl;
+                window.open(data.consentUrl, '_blank', 'noopener,noreferrer');
             }
 
             // Làm mới danh sách sau khi hủy bán
@@ -336,6 +352,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
             setIsProcessing(false);
         }
     };
+
 
     // Mở modal để liệt kê tài sản
     const openListingModal = (item) => {
@@ -442,7 +459,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
     return (
         <div className="card w-100">
             {/* Tiêu đề và các nút điều khiển */}
-            <div className="card-header bg-white">
+            <div className="card-header ">
                 <div className="d-flex justify-content-between align-items-center">
                     <h5 className="card-title mb-0">Danh Sách Items</h5>
                     <div className="d-flex align-items-center">
@@ -534,19 +551,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     .table-hover tbody tr:hover {
                         background-color: rgba(0, 0, 0, 0.02);
                     }
-
-                    .mint-address {
-                        font-family: monospace;
-                        font-size: 0.875em;
-                        background-color: #f8f9fa;
-                        padding: 0.2em 0.4em;
-                        border-radius: 3px;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        max-width: 150px;
-                        display: inline-block;
-                    }
                     `}
                             </style>
                             <div className="mobile-table-wrapper">
@@ -559,7 +563,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                             <th style={{ width: '180px' }}>Tên</th>
                                             <th style={{ width: '200px' }}>Mô tả</th>
                                             <th style={{ width: '120px' }}>Trạng Thái Bán</th>
-                                            <th style={{ width: '200px' }}>Địa chỉ ví</th>
                                             <th style={{ width: '150px' }}>Hành Động</th>
                                         </tr>
                                     </thead>
@@ -567,6 +570,8 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                     <tbody>
                                         {currentItems.map((itemData, index) => {
                                             const { type, item } = itemData;
+                                            if (type === 'Currency') return null;  // Ẩn các item loại Currency
+
                                             return (
                                                 <tr key={index}>
                                                     {/* Các cột thông tin */}
@@ -597,13 +602,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                                         <small className="text-muted">ID: {truncateText(item.id, 15)}</small>
                                                     </td>
                                                     <td>
-                                                        {type === 'Currency' ? (
-                                                            <div>
-                                                                <span className="badge bg-light text-dark">
-                                                                    Decimals: {item.decimals}
-                                                                </span>
-                                                            </div>
-                                                        ) : (
+                                                        {type !== 'Currency' && (
                                                             <div className="text-truncate" style={{ maxWidth: '200px' }} title={item.description}>
                                                                 {item.description || '-'}
                                                             </div>
@@ -619,11 +618,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                                         ) : (
                                                             <span className="badge bg-secondary">Chưa Bán</span>
                                                         )}
-                                                    </td>
-                                                    <td>
-                                                        <span className="mint-address" title={item.mintAddress}>
-                                                            {item.mintAddress}
-                                                        </span>
                                                     </td>
                                                     {/* Nút hành động */}
                                                     <td>
@@ -664,6 +658,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                             );
                                         })}
                                     </tbody>
+
                                 </table>
                             </div>
                         </div>

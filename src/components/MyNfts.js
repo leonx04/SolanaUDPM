@@ -243,7 +243,7 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
       {/* Create Product Modal */}
       <Modal show={showModal} onHide={handleClose} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Tạo Sản Phẩm Mới</Modal.Title>
+          <Modal.Title className="theme-text">Tạo Sản Phẩm Mới</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {error && (

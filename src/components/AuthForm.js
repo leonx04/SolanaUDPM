@@ -1,30 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { apiKey } from '../api';
 
 const apiBaseUrl = "https://api.gameshift.dev/nx/users";
 
 const AuthForm = ({ setIsLoggedIn, setUserData }) => {
+  // Quản lý trạng thái dữ liệu biểu mẫu
   const [formData, setFormData] = useState({
     referenceId: '',
-    email: ''
+    email: '',
+    externalWalletAddress: ''
   });
+
+  // Trạng thái xem người dùng đang đăng ký hay đăng nhập
   const [isRegistering, setIsRegistering] = useState(false);
+
+  // Quản lý trạng thái thông báo lỗi và thành công
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Quản lý trạng thái hiển thị biểu mẫu
   const [isFormVisible, setIsFormVisible] = useState(true);
+
+  // Trạng thái tải trong quá trình gửi yêu cầu
   const [isLoading, setIsLoading] = useState(false);
 
+  // Kiểm tra xem Phantom Wallet đã được cài đặt hay chưa
+  const [isPhantomInstalled, setIsPhantomInstalled] = useState(false);
+
+  useEffect(() => {
+    // Kiểm tra nếu Phantom Wallet có sẵn trong trình duyệt
+    const checkPhantomWallet = () => {
+      const { solana } = window;
+      setIsPhantomInstalled(!!(solana && solana.isPhantom));
+    };
+
+    checkPhantomWallet(); // Gọi hàm kiểm tra khi component được mount
+  }, []);
+
+  // Kết nối với Phantom Wallet
+  const connectPhantomWallet = async () => {
+    if (!isPhantomInstalled) {
+      setErrorMessage('Phantom Wallet chưa được cài đặt');
+      return null;
+    }
+
+    try {
+      // Thực hiện kết nối và trả về địa chỉ ví
+      const resp = await window.solana.connect();
+      return resp.publicKey.toString();
+    } catch (err) {
+      setErrorMessage('Kết nối ví Phantom thất bại');
+      return null;
+    }
+  };
+
+  // Cập nhật trạng thái form khi người dùng thay đổi giá trị
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    setErrorMessage('');
-    setSuccessMessage('');
+    setErrorMessage(''); // Reset lỗi khi người dùng nhập lại
+    setSuccessMessage(''); // Reset thông báo thành công
   };
 
+  // Xác thực dữ liệu biểu mẫu
   const validateForm = () => {
     if (!formData.referenceId || !formData.email) {
       setErrorMessage('Vui lòng nhập đầy đủ thông tin.');
@@ -37,75 +79,81 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
     return true;
   };
 
+  // Xử lý hành động đăng ký hoặc đăng nhập
   const handleAction = async (isRegister) => {
     if (!validateForm()) return;
 
-    setIsLoading(true);
+    setIsLoading(true); // Hiển thị trạng thái loading
     setErrorMessage('');
     setSuccessMessage('');
 
     try {
-      const config = {
-        headers: {
-          'accept': 'application/json',
-          'content-type': 'application/json',
-          'x-api-key': apiKey
-        }
-      };
-
       if (isRegister) {
-        // Đăng ký người dùng (POST request)
+        // Nếu đăng ký, kết nối Phantom Wallet trước
+        const walletAddress = await connectPhantomWallet();
+        if (!walletAddress) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Cập nhật địa chỉ ví vào form
+        setFormData(prev => ({
+          ...prev,
+          externalWalletAddress: walletAddress
+        }));
+
+        const config = {
+          headers: {
+            'accept': 'application/json',
+            'content-type': 'application/json',
+            'x-api-key': apiKey
+          }
+        };
+
+        // Gửi yêu cầu đăng ký
         await axios.post(apiBaseUrl, {
           referenceId: formData.referenceId,
-          email: formData.email
+          email: formData.email,
+          externalWalletAddress: walletAddress
         }, config);
 
         setSuccessMessage('Đăng ký thành công!');
       } else {
-        // Đăng nhập người dùng (kiểm tra tài khoản)
-        try {
-          // Thử lấy thông tin người dùng bằng referenceId
-          const response = await axios.get(`${apiBaseUrl}/${formData.referenceId}`, config);
-          
-          // Kiểm tra email có khớp với tài khoản không
-          if (response.data.email !== formData.email) {
-            throw new Error('Email không khớp');
+        // Xử lý đăng nhập
+        const config = {
+          headers: {
+            'accept': 'application/json',
+            'x-api-key': apiKey
           }
+        };
 
-          setSuccessMessage('Đăng nhập thành công!');
-        } catch (err) {
-          // Xử lý lỗi chi tiết hơn
-          if (err.response && err.response.status === 404) {
-            setErrorMessage('Tài khoản không tồn tại.');
-          } else if (err.message === 'Email không khớp') {
-            setErrorMessage('Email không khớp với tài khoản.');
-          } else {
-            setErrorMessage('Đăng nhập thất bại. Vui lòng thử lại.');
-          }
-          return;
+        const response = await axios.get(`${apiBaseUrl}/${formData.referenceId}`, config);
+
+        if (response.data.email !== formData.email) {
+          throw new Error('Email không khớp');
         }
+
+        setSuccessMessage('Đăng nhập thành công!');
       }
 
-      // Cập nhật trạng thái đăng nhập
+      // Cập nhật trạng thái và lưu thông tin người dùng sau khi thành công
       setTimeout(() => {
         setUserData(formData);
         setIsLoggedIn(true);
         setIsFormVisible(false);
       }, 1500);
-
     } catch (err) {
-      // Xử lý lỗi đăng ký
+      // Xử lý các lỗi từ phía server
       setErrorMessage(
         err.response?.status === 409
           ? 'Tài khoản đã tồn tại.'
           : 'Đã xảy ra lỗi. Vui lòng thử lại sau.'
       );
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Tắt trạng thái loading
     }
   };
 
-  // Phần render giữ nguyên như trước
   if (!isFormVisible) {
     return (
       <div className="position-absolute top-50 start-50 translate-middle text-center">
@@ -117,6 +165,7 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
   }
 
   return (
+    // Phần giao diện hiển thị form
     <div className="vh-100 d-flex align-items-center justify-content-center bg-light">
       <div className="container">
         <div className="row justify-content-center">
@@ -158,11 +207,17 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
                   />
                 </div>
 
+                {isRegistering && !isPhantomInstalled && (
+                  <div className="alert alert-warning py-2 mt-3 mb-3 text-center small">
+                    Vui lòng cài đặt Phantom Wallet để đăng ký
+                  </div>
+                )}
+
                 <button
                   type="button"
                   className={`btn ${isRegistering ? 'btn-dark' : 'btn-primary'} w-100 py-3 rounded-3 position-relative overflow-hidden`}
                   onClick={() => handleAction(isRegistering)}
-                  disabled={isLoading}
+                  disabled={isLoading || (isRegistering && !isPhantomInstalled)}
                 >
                   {isLoading ? (
                     <div className="spinner-border spinner-border-sm" role="status">
