@@ -7,7 +7,7 @@ import {
 } from '@solana/web3.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Dropdown } from 'react-bootstrap';
 import { Link, Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import './App.css';
@@ -60,7 +60,7 @@ function App() {
   }, [theme]);
 
   // Hàm fetch số dư USDC
-  const fetchUsdcBalance = async () => {
+  const fetchUsdcBalance = useCallback(async () => {
     if (walletAddress) {
       try {
         const publicKey = new PublicKey(walletAddress);
@@ -71,7 +71,7 @@ function App() {
         setUsdcBalance(null);
       }
     }
-  };
+  }, [walletAddress, connection]); // Thêm dependencies
 
 
   // Hàm lấy số dư USDC

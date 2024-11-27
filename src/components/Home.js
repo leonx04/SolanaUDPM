@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Alert, Button, Card, Form, Modal, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
 // Thành phần Pagination được cải tiến để xử lý các trường hợp edge case
@@ -92,7 +92,7 @@ const MarketplaceHome = ({ referenceId }) => {
   };
 
   // Lấy toàn bộ danh sách sản phẩm
-  const fetchAllItems = async () => {
+  const fetchAllItems = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -128,7 +128,7 @@ const MarketplaceHome = ({ referenceId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Cập nhật items phân trang
   const updatePaginatedItems = (fullItemsList, perPage, currentPage) => {
@@ -149,7 +149,7 @@ const MarketplaceHome = ({ referenceId }) => {
   // Tải dữ liệu ban đầu
   useEffect(() => {
     fetchAllItems();
-  },[fetchAllItems]);
+  }, [fetchAllItems]);
 
   // Xử lý thay đổi số lượng items trên trang
   const handlePerPageChange = (newPerPage) => {
