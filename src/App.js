@@ -146,7 +146,7 @@ function App() {
     }
 
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [fetchUsdcBalance]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);

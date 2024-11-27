@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiKey } from '../api';
 import { Modal, Button, Form, Alert, Pagination } from 'react-bootstrap';
 
@@ -95,7 +95,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
     const [marketFilter, setMarketFilter] = useState('all');
 
     // Hàm tìm nạp danh sách items
-    const fetchItems = async () => {
+    const fetchItems = useCallback(async () => {
         setLoading(true);
         setError(null);
 
@@ -153,7 +153,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [ownerReferenceId, marketFilter]);
 
 
 
@@ -262,7 +262,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
     // Tự động tải items khi component mount hoặc các dependency thay đổi
     useEffect(() => {
         fetchItems();
-    }, [ownerReferenceId, marketFilter]);
+    }, [ownerReferenceId, marketFilter, fetchItems]);  // Thêm fetchItems vào dependencies
 
     // Hàm xử lý liệt kê tài sản bán
     const handleListForSale = async () => {

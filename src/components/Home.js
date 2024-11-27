@@ -149,7 +149,7 @@ const MarketplaceHome = ({ referenceId }) => {
   // Tải dữ liệu ban đầu
   useEffect(() => {
     fetchAllItems();
-  }, []);
+  },[fetchAllItems]);
 
   // Xử lý thay đổi số lượng items trên trang
   const handlePerPageChange = (newPerPage) => {
