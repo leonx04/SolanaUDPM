@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { apiKey } from '../api';
+import unidecode from 'unidecode';
 
 const apiBaseUrl = "https://api.gameshift.dev/nx/users";
 
@@ -58,12 +59,14 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
   // Cập nhật trạng thái form khi người dùng thay đổi giá trị
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    const updatedValue = unidecode(value);  // Sử dụng unidecode để loại bỏ dấu
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: updatedValue
     }));
-    setErrorMessage(''); // Reset lỗi khi người dùng nhập lại
-    setSuccessMessage(''); // Reset thông báo thành công
+    setErrorMessage('');
+    setSuccessMessage('');
   };
 
   // Xác thực dữ liệu biểu mẫu
@@ -187,7 +190,7 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
                   <input
                     type="text"
                     className="form-control form-control-lg bg-light border-0 rounded-3"
-                    placeholder="Reference ID"
+                    placeholder="Tên tài khoản"
                     name="referenceId"
                     value={formData.referenceId}
                     onChange={handleInputChange}
