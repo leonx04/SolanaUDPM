@@ -60,6 +60,7 @@
     "@babel/preset-env": "^7.22.0",
     "@babel/preset-react": "^7.22.0",
     "ajv": "^7.2.4",
-    "react-scripts": "^5.0.1"
+    "react-scripts": "^5.0.1",
+    "eslint": "^8.50.0"  
   }
 }
