@@ -74,6 +74,7 @@ function App() {
   }, [walletAddress, connection]); // Thêm dependencies
 
 
+
   // Hàm lấy số dư USDC
   const getUsdcBalance = async (connection, walletPublicKey) => {
     try {

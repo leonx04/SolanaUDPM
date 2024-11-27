@@ -92,7 +92,7 @@ const MarketplaceHome = ({ referenceId }) => {
   };
 
   // Lấy toàn bộ danh sách sản phẩm
-  const fetchAllItems = useCallback(async () => {
+  const fetchItems = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -128,7 +128,7 @@ const MarketplaceHome = ({ referenceId }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterItems, pagination.perPage]); // Thêm các dependencies cần thiết
 
   // Cập nhật items phân trang
   const updatePaginatedItems = (fullItemsList, perPage, currentPage) => {

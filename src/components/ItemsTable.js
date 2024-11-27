@@ -166,8 +166,8 @@ const ItemsTable = ({ ownerReferenceId }) => {
     // Tính tổng số trang
     const totalPages = Math.ceil(items.length / itemsPerPage);
 
-    // Hàm thay đổi trang
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    // // Hàm thay đổi trang
+    // const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     // // Hàm sinh các nút phân trang động
     // const renderPaginationItems = () => {
