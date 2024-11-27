@@ -320,9 +320,9 @@ const ItemsTable = ({ ownerReferenceId }) => {
         setListingError(null);
 
         try {
-            // Gọi API để hủy bán tài sản với URL mới
+            // Gọi API để hủy bán tài sản với URL mới cho unique assets
             const response = await fetch(
-                `https://api.gameshift.dev/assets/${itemId}/cancel-listing`, // Thay đổi URL endpoint
+                `https://api.gameshift.dev/nx/unique-assets/${itemId}/cancel-listing`,
                 {
                     method: 'POST',
                     headers: {
@@ -339,9 +339,9 @@ const ItemsTable = ({ ownerReferenceId }) => {
 
             const data = await response.json();
 
-            // Chuyển hướng người dùng đến URL đồng ý
+            // Mở URL đồng ý trong tab mới thay vì chuyển hướng
             if (data.consentUrl) {
-                window.location.href = data.consentUrl;
+                window.open(data.consentUrl, '_blank', 'noopener,noreferrer');
             }
 
             // Làm mới danh sách sau khi hủy bán
@@ -352,6 +352,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
             setIsProcessing(false);
         }
     };
+
 
     // Mở modal để liệt kê tài sản
     const openListingModal = (item) => {
