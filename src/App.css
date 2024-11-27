@@ -358,38 +358,47 @@
 }
 
 /* Mobile Responsive */
+/* Mobile Responsive Top Navigation */
 @media (max-width: 767px) {
-  .sidebar {
-    position: fixed;
-    transform: translateX(-100%);
-  }
-  
-  .sidebar.closed {
-    transform: translateX(-100%);
-  }
-  
-  .sidebar:not(.closed) {
-    transform: translateX(0);
+  .top-nav {
+    flex-direction: column;
+    height: auto;
+    padding: 0.5rem 1rem;
   }
 
-  .sidebar-overlay {
-    display: block;
+  .top-nav > .d-flex {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch !important;
   }
 
-  .main-content {
-    margin-left: 0;
+  .top-nav > .d-flex > * {
+    margin: 0.25rem 0 !important;
+  }
+
+  .top-nav .menu-toggle {
+    align-self: flex-start;
+    margin-bottom: 0.5rem;
+  }
+
+  .top-nav .theme-toggle {
+    align-self: flex-start;
+    margin-bottom: 0.5rem;
+  }
+
+  .top-nav .wallet-connection-container {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .top-nav .wallet-connection-container > * {
+    margin: 0.25rem 0 !important;
     width: 100%;
   }
 
-  .content-area {
-    padding: 1rem;
-  }
-
-  /* Ensure modals don't overflow on mobile */
-  .modal-body {
-    padding: 1rem;
-    max-height: calc(100vh - 210px);
-    overflow-y: auto;
+  .top-nav .user-dropdown {
+    margin-top: 0.5rem;
+    align-self: flex-start;
   }
 }
 /* Giữ nguyên các CSS hiện tại và thêm đoạn sau vào cuối file */

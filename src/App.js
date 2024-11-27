@@ -61,12 +61,13 @@ function App() {
         return usdcBalance;
       }
 
-      return 0;
+      return 0; // Không tìm thấy số dư, trả về 0
     } catch (error) {
       console.error('Lỗi khi lấy số dư USDC:', error);
-      return null;
+      return 0; // Nếu có lỗi, trả về 0
     }
   };
+
 
   // Hàm fetch số dư USDC
   const fetchUsdcBalance = useCallback(async () => {
@@ -74,13 +75,21 @@ function App() {
       try {
         const publicKey = new PublicKey(walletAddress);
         const balance = await getUsdcBalance(connection, publicKey);
-        setUsdcBalance(balance);
+
+        // Kiểm tra nếu balance là null hoặc NaN
+        if (balance !== null && !isNaN(balance)) {
+          setUsdcBalance(balance);  // Cập nhật số dư USDC nếu có
+        } else {
+          setUsdcBalance(0);  // Nếu không có số dư, hiển thị là 0
+        }
       } catch (error) {
         console.error('Lỗi khi lấy số dư USDC:', error);
-        setUsdcBalance(null);
+        setUsdcBalance(0);  // Trường hợp có lỗi, hiển thị số dư là 0
       }
     }
   }, [walletAddress, connection]);
+
+
 
   // Theo dõi theme và áp dụng class
   useEffect(() => {
@@ -282,13 +291,14 @@ function App() {
             <div className={`main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
               {/* Top Navigation */}
               <nav className="top-nav">
-                <div className="d-flex align-items-center">
+                <div className="d-flex align-items-center w-100">
                   <button
                     className="btn btn-link menu-toggle"
                     onClick={toggleSidebar}
                   >
                     <i className="bi bi-list fs-4"></i>
                   </button>
+
                   {/* Theme Toggle Button */}
                   <button
                     className="btn btn-link theme-toggle ms-3"
@@ -302,66 +312,69 @@ function App() {
                     )}
                   </button>
 
-                  {/* Wallet Connection Button */}
-                  {!walletAddress ? (
-                    <Button
-                      variant="outline-primary"
-                      onClick={connectWallet}
-                      disabled={walletLoading}
-                      className="ms-3"
-                    >
-                      {walletLoading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Đang kết nối...
-                        </>
-                      ) : (
-                        'Kết nối ví Phantom'
-                      )}
-                    </Button>
-                  ) : (
-                    <div className="ms-3 d-flex align-items-center">
-                      <span className="me-2 text-muted">
-                        Số dư SOL:
-                        <span className="fw-bold text-dark ms-1">
-                          {walletBalance.toFixed(2)} SOL
-                        </span>
-                      </span>
-                      <span className="me-2 text-muted">
-                        Số dư USDC:
-                        <span className="fw-bold text-dark ms-1">
-                          {usdcBalance !== null ? usdcBalance.toFixed(2) : 'Đang tải...'} USDC
-                        </span>
-                      </span>
+                  {/* Wallet Connection Container */}
+                  <div className="wallet-connection-container d-flex align-items-center ms-3">
+                    {!walletAddress ? (
                       <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={disconnectWallet}
+                        variant="outline-primary"
+                        onClick={connectWallet}
+                        disabled={walletLoading}
                       >
-                        Ngắt kết nối
+                        {walletLoading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Đang kết nối...
+                          </>
+                        ) : (
+                          'Connect Phantom'
+                        )}
                       </Button>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="d-flex flex-column">
+                        <div className="d-flex align-items-center">
+                          <span className="me-2 text-muted">
+                            SOL:
+                            <span className="fw-bold text-dark ms-1">
+                              {walletBalance.toFixed(2)} SOL
+                            </span>
+                          </span>
+                          <span className="me-2 text-muted">
+                            USDC:
+                            <span className="fw-bold text-dark ms-1">
+                              {usdcBalance !== null ? usdcBalance.toFixed(2) : 'Đang tải...'} USDC
+                            </span>
+                          </span>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={disconnectWallet}
+                            className="ms-2"
+                          >
+                            Stop
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
-                  {walletError && (
-                    <div className="alert alert-danger ms-3 mb-0 py-1 px-2" role="alert">
-                      {walletError}
-                    </div>
-                  )}
+                    {walletError && (
+                      <div className="alert alert-danger mt-2 mb-0 py-1 px-2" role="alert">
+                        {walletError}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <Dropdown>
+                <Dropdown className="user-dropdown">
                   <Dropdown.Toggle
                     variant="link"
                     id="user-dropdown"
-                    className="theme-text d-flex align-items-center text-decoration-none "
+                    className="theme-text d-flex align-items-center text-decoration-none"
                   >
                     <i className="bi bi-person-circle me-2"></i>
                     {userData?.email}
                   </Dropdown.Toggle>
 
                   <Dropdown.Menu>
-                    
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={handleLogout} className="text-danger">
                       <i className="bi bi-box-arrow-right me-2"></i>
