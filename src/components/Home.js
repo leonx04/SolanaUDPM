@@ -324,11 +324,8 @@ const MarketplaceHome = ({ referenceId }) => {
                   />
                   <Card.Body style={{ flex: 1 }}>
                     <Card.Title className="fw-bold">{item.name}</Card.Title>
-                    <Card.Text
-                      className="theme-text text-muted mb-2"
-                      style={{ minHeight: '60px' }}
-                    >
-                      {item.description || 'Không có mô tả'}
+                    <Card.Text className="text-muted">
+                      Tác giả: {item.owner.referenceId}
                     </Card.Text>
 
                     <div className="d-flex justify-content-between align-items-center mt-auto">
