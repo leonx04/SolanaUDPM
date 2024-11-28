@@ -67,8 +67,8 @@ https://udpm-solana-11.netlify.app/
 Cấu hình các thông tin sau trong file `.env`:
 
 - **Firebase Config**: Các thông số xác thực và database từ Firebase. 🔐
-- **Solana Network**: Endpoint RPC của mạng Solana (ví dụ: `https://api.devnet.solana.com`). 🌐
-- **API Keys**: Các khóa API cho các dịch vụ phụ trợ nếu cần. 🔑
+- **Solana Network**: Endpoint RPC của mạng Solana (ví dụ: `https://app.gameshift.dev/`). 🌐
+- **API Keys**: Các khóa API cho các dịch vụ phụ trợ nếu cần(Game shift). 🔑
 
 ## 📦 Dependencies
 
