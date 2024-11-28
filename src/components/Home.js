@@ -162,6 +162,19 @@ const MarketplaceHome = ({ referenceId }) => {
   const [buyLoading, setBuyLoading] = useState(false);
   const [buyError, setBuyError] = useState(null);
 
+  const [lastFetchTime, setLastFetchTime] = useState(Date.now());
+
+  // Interval để tự động fetch dữ liệu (mỗi 30 giây)
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      fetchAllItems();
+    }, 30000); // 30 giây
+
+    // Cleanup interval khi component bị hủy
+    return () => clearInterval(intervalId);
+  }, []);
+
+
   // Memoized filter function
   const filteredItems = useMemo(() => {
     return allItems.filter(itemData =>
@@ -204,7 +217,13 @@ const MarketplaceHome = ({ referenceId }) => {
         page++;
       }
 
-      setAllItems(allFetchedItems);
+      // So sánh dữ liệu mới với dữ liệu cũ
+      const hasChanged = JSON.stringify(allFetchedItems) !== JSON.stringify(allItems);
+
+      if (hasChanged) {
+        setAllItems(allFetchedItems);
+        setLastFetchTime(Date.now());
+      }
     } catch (err) {
       if (axios.isCancel(err)) {
         console.log('Request canceled', err.message);
@@ -215,7 +234,22 @@ const MarketplaceHome = ({ referenceId }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [allItems]);
+
+  // Fetch data with cleanup
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchAllItems(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
+  }, [fetchAllItems]);
+
+  // Thêm nút làm mới thủ công
+  const handleManualRefresh = () => {
+    fetchAllItems();
+  };
 
   // Fetch data with cleanup
   useEffect(() => {
@@ -333,6 +367,20 @@ const MarketplaceHome = ({ referenceId }) => {
         <h1 className="text-center mb-5 display-4 fw-bold text-primary">
           Trang chủ
         </h1>
+        {/* Thêm thông báo thời gian cập nhật cuối cùng */}
+        <div className="text-center mb-3">
+          <small className="text-muted">
+            Cập nhật lần cuối: {new Date(lastFetchTime).toLocaleString()}
+            <Button
+              variant="link"
+              size="sm"
+              onClick={handleManualRefresh}
+              className="ms-2 btn btn-primary btn-sm text-decoration-none text-light"
+            >
+              Làm mới ngay
+            </Button>
+          </small>
+        </div>
 
         {/* Pagination and display controls */}
         <div className="row g-3 align-items-center">
