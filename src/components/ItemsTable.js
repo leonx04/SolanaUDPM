@@ -29,12 +29,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    //Thêm state để quản lý loại tiền tệ:
-    const [selectedCurrency, setSelectedCurrency] = useState('USDC');
-    const availableCurrencies = items
-        .filter(item => item.type === 'Currency')
-        .map(item => item.item);
-
     // Thêm ở đầu file, ngay sau các import
     const CLOUDINARY_UPLOAD_PRESET = 'ARTSOLANA';
     const CLOUDINARY_CLOUD_NAME = 'dy3nmkszo';
@@ -100,32 +94,26 @@ const ItemsTable = ({ ownerReferenceId }) => {
         setError(null);
 
         try {
-            // Xây dựng URL với các tham số lọc
             let url = `https://api.gameshift.dev/nx/items`;
             const params = new URLSearchParams();
 
-            // Thêm tham số chủ sở hữu nếu có
             if (ownerReferenceId) {
                 params.append('ownerReferenceId', ownerReferenceId);
             }
 
-            // Áp dụng bộ lọc trạng thái bán
             switch (marketFilter) {
                 case 'forSale':
                     params.append('forSale', 'true');
                     break;
                 case 'notForSale':
-                    params.append('priceCents', 'null'); // Kiểm tra giá trị priceCents là null
+                    params.append('priceCents', 'null');
                     break;
                 default:
-                    // Trường hợp tất cả
                     break;
             }
 
-            // Xây dựng URL với các tham số tìm nạp
             url += `?${params.toString()}`;
 
-            // Gọi API để lấy danh sách items
             const response = await fetch(url, {
                 headers: {
                     'accept': 'application/json',
@@ -133,15 +121,12 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 }
             });
 
-            // Kiểm tra phản hồi của API
             if (!response.ok) {
                 throw new Error('Không thể tải danh sách items');
             }
 
-            // Chuyển đổi dữ liệu nhận được thành JSON
             const data = await response.json();
 
-            // Lọc lại danh sách nếu cần thiết
             if (marketFilter === 'notForSale') {
                 setItems(data.data.filter(item => item.item.priceCents === null));
             } else {
@@ -194,7 +179,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     },
                     body: JSON.stringify({
                         price: {
-                            currencyId: selectedCurrency, // Sử dụng selectedCurrency thay vì hardcode
+                            currencyId: 'USDC', // Cố định sử dụng USDC
                             naturalAmount: listingPrice
                         }
                     })
@@ -266,7 +251,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
     const openListingModal = (item) => {
         setSelectedItem(item);
         setListingPrice('');
-        setSelectedCurrency(availableCurrencies[0]?.id || 'USDC');
         setListingError(null);
         setShowListingModal(true);
     };
@@ -360,9 +344,14 @@ const ItemsTable = ({ ownerReferenceId }) => {
         }
     };
 
-    // Reset state khi mở modal chỉnh sửa
+    // Thêm polling để cập nhật real-time
+    useEffect(() => {
+        const pollInterval = setInterval(() => {
+            fetchItems();
+        }, 10000); // Kiểm tra mỗi 10 giây
 
-
+        return () => clearInterval(pollInterval);
+    }, [fetchItems]);
 
     return (
         <div className="card w-100">
@@ -654,12 +643,10 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     <Modal.Title>Liệt Kê Tài Sản Bán</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    {/* Hiển thị lỗi nếu có */}
                     {listingError && (
                         <Alert variant="danger">{listingError}</Alert>
                     )}
 
-                    {/* Form nhập thông tin bán */}
                     <Form>
                         <Form.Group>
                             <Form.Label>Tên Tài Sản</Form.Label>
@@ -671,25 +658,10 @@ const ItemsTable = ({ ownerReferenceId }) => {
                         </Form.Group>
 
                         <Form.Group className="mt-3">
-                            <Form.Label>Loại Tiền</Form.Label>
-                            <Form.Select
-                                value={selectedCurrency}
-                                onChange={(e) => setSelectedCurrency(e.target.value)}
-                                disabled={isProcessing}
-                            >
-                                {availableCurrencies.map(currency => (
-                                    <option key={currency.id} value={currency.id}>
-                                        {currency.symbol}
-                                    </option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-
-                        <Form.Group className="mt-3">
-                            <Form.Label>Giá ({selectedCurrency})</Form.Label>
+                            <Form.Label>Giá (USDC)</Form.Label>
                             <Form.Control
                                 type="number"
-                                placeholder={`Nhập giá (${selectedCurrency})`}
+                                placeholder="Nhập giá (USDC)"
                                 value={listingPrice}
                                 onChange={(e) => setListingPrice(e.target.value)}
                                 min="0.01"
@@ -699,13 +671,13 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    {/* Nút hủy và xác nhận */}
                     <Button
                         variant="secondary"
                         onClick={() => setShowListingModal(false)}
                         disabled={isProcessing}
                     >
-                        Hủy</Button>
+                        Hủy
+                    </Button>
                     <Button
                         variant="primary"
                         onClick={handleListForSale}
