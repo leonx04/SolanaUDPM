@@ -9,12 +9,13 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Dropdown } from 'react-bootstrap';
-import { Link, Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Navigate, NavLink, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import './App.css';
 import AuthForm from "./components/AuthForm";
 import Home from "./components/Home";
 import MyNfts from "./components/MyNfts";
 import User from "./components/User";
+
 
 // Địa chỉ token USDC chính thức trên Solana devnet
 const USDC_MINT_ADDRESS = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
@@ -268,14 +269,24 @@ function App() {
 
               <div className="sidebar-content">
                 <div className="nav flex-column">
-                  <Link to="/home" className="nav-link" onClick={closeSidebarOnMobile}>
+                  <NavLink
+                    to="/home"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={closeSidebarOnMobile}
+                  >
                     <i className="bi bi-house-door me-2"></i>
                     Trang chủ
-                  </Link>
-                  <Link to="/my-nfts" className="nav-link" onClick={closeSidebarOnMobile}>
+                  </NavLink>
+                  <NavLink
+                    to="/my-nfts"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={closeSidebarOnMobile}
+                  >
                     <i className="bi bi-collection me-2"></i>
                     NFT của tôi
-                  </Link>
+                  </NavLink>
                 </div>
               </div>
 
