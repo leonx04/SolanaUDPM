@@ -164,16 +164,6 @@ const MarketplaceHome = ({ referenceId }) => {
 
   const [lastFetchTime, setLastFetchTime] = useState(Date.now());
 
-  // Interval để tự động fetch dữ liệu (mỗi 30 giây)
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      fetchAllItems();
-    }, 30000); // 30 giây
-
-    // Cleanup interval khi component bị hủy
-    return () => clearInterval(intervalId);
-  }, []);
-
 
   // Memoized filter function
   const filteredItems = useMemo(() => {
@@ -236,31 +226,42 @@ const MarketplaceHome = ({ referenceId }) => {
     }
   }, [allItems]);
 
-  // Fetch data with cleanup
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchAllItems(controller.signal);
-
-    return () => {
-      controller.abort();
-    };
-  }, [fetchAllItems]);
-
   // Thêm nút làm mới thủ công
   const handleManualRefresh = () => {
     fetchAllItems();
   };
 
+  // Interval để tự động fetch dữ liệu (mỗi 30 giây)
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      fetchAllItems();
+    }, 30000); // 30 giây
+
+    // Cleanup interval khi component bị hủy
+    return () => clearInterval(intervalId);
+  }, []);
+
   // Fetch data with cleanup
   useEffect(() => {
     const controller = new AbortController();
-    fetchAllItems(controller.signal);
+
+    const fetchData = async () => {
+      try {
+        await fetchAllItems(controller.signal);
+      } catch (err) {
+        if (axios.isCancel(err)) {
+          return;
+        }
+        console.error('Fetch error:', err);
+      }
+    };
+
+    fetchData();
 
     return () => {
       controller.abort();
     };
   }, [fetchAllItems]);
-
   // Pagination hook
   const {
     currentItems,
@@ -460,7 +461,7 @@ const MarketplaceHome = ({ referenceId }) => {
                         </span>
                       </div>
                       <Button
-                        variant="outline-primary"
+                        variant="btn btn-primary"
                         onClick={() => handleBuyItem(itemData)}
                       >
                         Mua ngay
