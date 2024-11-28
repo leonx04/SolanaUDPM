@@ -187,16 +187,16 @@ const MarketplaceHome = ({ referenceId }) => {
   };
 
   // Buy with Phantom Wallet
-  const buyItemWithPhantomWallet = async () => { 
+  const buyItemWithPhantomWallet = async () => {
     setBuyLoading(true);
     setBuyError(null);
-  
+
     try {
       const provider = window.phantom?.solana;
       if (!provider || !provider.isConnected) {
         throw new Error("Vui lòng kết nối ví Phantom trước khi mua");
       }
-  
+
       const response = await axios.post(
         `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/buy`,
         {
@@ -210,24 +210,24 @@ const MarketplaceHome = ({ referenceId }) => {
           }
         }
       );
-  
+
       // Bỏ qua transactionId, chỉ sử dụng consentUrl
       const { consentUrl } = response.data;
       window.open(consentUrl, '_blank');
       fetchAllItems();
     } catch (err) {
       console.error('Lỗi mua sản phẩm:', err);
-  
+
       const errorMessage = err.response?.data?.message ||
         err.message ||
         'Không thể thực hiện giao dịch. Vui lòng thử lại.';
-  
+
       setBuyError(errorMessage);
     } finally {
       setBuyLoading(false);
     }
   };
-  
+
 
   // Render loading state
   if (loading) {
@@ -273,7 +273,7 @@ const MarketplaceHome = ({ referenceId }) => {
     <div className="container-fluid py-5">
       <div className="container">
         <h1 className="text-center mb-5 display-4 fw-bold text-primary">
-          Marketplace Unique Assets
+          Trang chủ
         </h1>
 
         {/* Pagination and display controls */}
@@ -324,11 +324,8 @@ const MarketplaceHome = ({ referenceId }) => {
                   />
                   <Card.Body style={{ flex: 1 }}>
                     <Card.Title className="fw-bold">{item.name}</Card.Title>
-                    <Card.Text
-                      className="theme-text text-muted mb-2"
-                      style={{ minHeight: '60px' }}
-                    >
-                      {item.description || 'Không có mô tả'}
+                    <Card.Text className="text-muted">
+                      Tác giả: {item.owner.referenceId}
                     </Card.Text>
 
                     <div className="d-flex justify-content-between align-items-center mt-auto">
@@ -339,7 +336,7 @@ const MarketplaceHome = ({ referenceId }) => {
                       </div>
                       <Button
                         variant="outline-primary"
-                        onClick={() => handleBuyItem(itemData.item)}
+                        onClick={() => handleBuyItem(itemData)}
                       >
                         Mua ngay
                       </Button>
@@ -354,29 +351,50 @@ const MarketplaceHome = ({ referenceId }) => {
 
       {/* Purchase Confirmation Modal */}
       {selectedItem && (
-        <Modal show={!!selectedItem} onHide={() => setSelectedItem(null)}>
+        <Modal show={!!selectedItem} onHide={() => setSelectedItem(null)} size="lg">
           <Modal.Header closeButton>
-            <Modal.Title>Xác nhận mua {selectedItem.name}</Modal.Title>
+            <Modal.Title>Xác nhận mua <span className="text-bg-warning rounded-3"> {selectedItem.item.name}</span></Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <div className="text-center">
-              <img
-                src={selectedItem.imageUrl}
-                alt={selectedItem.name}
-                className="img-fluid mb-3 rounded"
-                style={{ maxHeight: '300px' }}
-              />
-              <p>Bạn có chắc chắn muốn mua sản phẩm này?</p>
-              <p className="fw-bold">
-                Giá: ${(selectedItem.priceCents / 100).toFixed(2)} USDC
-              </p>
+            <div className="row">
+              <div className="col-md-6">
+                <img
+                  src={selectedItem.item.imageUrl}
+                  alt={selectedItem.item.name}
+                  className="img-fluid mb-3 rounded"
+                  style={{ maxHeight: '300px', width: '100%', objectFit: 'cover' }}
+                />
+              </div>
+              <div className="col-md-6">
+                <h4>Chi tiết sản phẩm</h4>
+                <p><strong>Mô tả:</strong> {selectedItem.item.description || 'Không có mô tả'}</p>
+                <p><strong>Tác giả:</strong> {selectedItem.item.owner.referenceId}</p>
 
-              {buyError && (
-                <Alert variant="danger" className="mt-3">
-                  {buyError}
-                </Alert>
-              )}
+                <p><strong>Giá:</strong> ${(selectedItem.item.priceCents / 100).toFixed(2)} USDC</p>
+
+                {selectedItem.item.attributes && selectedItem.item.attributes.length > 0 ? (
+                  <div>
+                    <strong>Thuộc tính:</strong>
+                    <ul className="list-unstyled">
+                      {selectedItem.item.attributes.map((attr, index) => (
+                        <li key={index} className="mb-2">
+                          <span className="badge bg-secondary me-2">{attr.traitType}</span>
+                          <span>{attr.value || 'Không có giá trị'}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p><strong>Thuộc tính:</strong> Không có thuộc tính</p>
+                )}
+              </div>
             </div>
+
+            {buyError && (
+              <Alert variant="danger" className="mt-3">
+                {buyError}
+              </Alert>
+            )}
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setSelectedItem(null)} disabled={buyLoading}>
