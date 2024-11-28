@@ -166,98 +166,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
     // Tính tổng số trang
     const totalPages = Math.ceil(items.length / itemsPerPage);
 
-    // // Hàm thay đổi trang
-    // const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-    // // Hàm sinh các nút phân trang động
-    // const renderPaginationItems = () => {
-    //     const paginationItems = [];
-
-    //     // Nút trang đầu
-    //     paginationItems.push(
-    //         <Pagination.First
-    //             key="first"
-    //             onClick={() => setCurrentPage(1)}
-    //             disabled={currentPage === 1}
-    //         />
-    //     );
-
-    //     // Nút trang trước
-    //     paginationItems.push(
-    //         <Pagination.Prev
-    //             key="prev"
-    //             onClick={() => setCurrentPage(currentPage - 1)}
-    //             disabled={currentPage === 1}
-    //         />
-    //     );
-
-    //     // Các nút số trang
-    //     const maxPagesToShow = 5;
-    //     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    //     let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
-    //     // Điều chỉnh lại nếu đến cuối hoặc đầu
-    //     if (endPage - startPage + 1 < maxPagesToShow) {
-    //         startPage = Math.max(1, endPage - maxPagesToShow + 1);
-    //     }
-
-    //     for (let number = startPage; number <= endPage; number++) {
-    //         paginationItems.push(
-    //             <Pagination.Item
-    //                 key={number}
-    //                 active={number === currentPage}
-    //                 onClick={() => paginate(number)}
-    //             >
-    //                 {number}
-    //             </Pagination.Item>
-    //         );
-    //     }
-
-    //     // Nút trang kế tiếp
-    //     paginationItems.push(
-    //         <Pagination.Next
-    //             key="next"
-    //             onClick={() => setCurrentPage(currentPage + 1)}
-    //             disabled={currentPage === totalPages}
-    //         />
-    //     );
-
-    //     // Nút trang cuối
-    //     paginationItems.push(
-    //         <Pagination.Last
-    //             key="last"
-    //             onClick={() => setCurrentPage(totalPages)}
-    //             disabled={currentPage === totalPages}
-    //         />
-    //     );
-
-    //     return paginationItems;
-    // };
-
-    // // Thêm dropdown chọn số lượng item trên mỗi trang
-    // const renderItemsPerPageSelector = () => {
-    //     const pageSizeOptions = [5, 10, 20, 50];
-    //     return (
-    //         <div className="d-flex align-items-center ms-3">
-    //             <span className="me-2">Hiển thị:</span>
-    //             <select
-    //                 className="form-select form-select-sm"
-    //                 style={{ width: 'auto' }}
-    //                 value={itemsPerPage}
-    //                 onChange={(e) => {
-    //                     setItemsPerPage(Number(e.target.value));
-    //                     setCurrentPage(1); // Reset về trang đầu
-    //                 }}
-    //             >
-    //                 {pageSizeOptions.map(size => (
-    //                     <option key={size} value={size}>
-    //                         {size} mục
-    //                     </option>
-    //                 ))}
-    //             </select>
-    //         </div>
-    //     );
-    // };
 
     // Tự động tải items khi component mount hoặc các dependency thay đổi
     useEffect(() => {
@@ -624,13 +532,15 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                                         {type === 'UniqueAsset' && (
                                                             <div className="d-flex gap-2">
                                                                 {/* Nút chỉnh sửa */}
-                                                                <Button
-                                                                    variant="outline-secondary"
-                                                                    size="sm"
-                                                                    onClick={() => openEditModal(item)}
-                                                                >
-                                                                    Sửa
-                                                                </Button>
+                                                                {!(item.priceCents > 0 && item.status === 'Committed') && (
+                                                                    <Button
+                                                                        variant="outline-secondary"
+                                                                        size="sm"
+                                                                        onClick={() => openEditModal(item)}
+                                                                    >
+                                                                        Sửa
+                                                                    </Button>
+                                                                )}
 
                                                                 {/* Nút bán/hủy bán */}
                                                                 {item.priceCents > 0 && item.status === 'Committed' ? (
