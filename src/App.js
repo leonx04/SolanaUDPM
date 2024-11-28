@@ -303,6 +303,7 @@ function App() {
               {/* Top Navigation */}
               <nav className="top-nav">
                 <div className="d-flex align-items-center w-100">
+                  {/* Nút mở sidebar */}
                   <button
                     className="btn btn-link menu-toggle"
                     onClick={toggleSidebar}
@@ -310,9 +311,9 @@ function App() {
                     <i className="bi bi-list fs-4"></i>
                   </button>
 
-                  {/* Theme Toggle Button */}
+                  {/* Nút đổi theme */}
                   <button
-                    className="btn btn-link theme-toggle ms-3"
+                    className="btn btn-link theme-toggle ms-auto"
                     onClick={toggleTheme}
                     title="Chuyển chế độ giao diện"
                   >
@@ -323,7 +324,7 @@ function App() {
                     )}
                   </button>
 
-                  {/* Wallet Connection Container */}
+                  {/* Hiển thị ví */}
                   <div className="wallet-connection-container d-flex align-items-center ms-3">
                     {!walletAddress ? (
                       <Button
@@ -366,7 +367,6 @@ function App() {
                         </div>
                       </div>
                     )}
-
                     {walletError && (
                       <div className="alert alert-danger mt-2 mb-0 py-1 px-2" role="alert">
                         {walletError}
@@ -375,6 +375,7 @@ function App() {
                   </div>
                 </div>
 
+                {/* Dropdown người dùng */}
                 <Dropdown className="user-dropdown">
                   <Dropdown.Toggle
                     variant="link"
@@ -394,6 +395,7 @@ function App() {
                   </Dropdown.Menu>
                 </Dropdown>
               </nav>
+
 
               {/* Main Content Area */}
               <div className="content-area">

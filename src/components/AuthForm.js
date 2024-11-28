@@ -46,8 +46,8 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
         {
           element: '#referenceId-input',
           popover: {
-            title: 'Reference ID',
-            description: 'Nhập mã tham chiếu duy nhất. Đây là mã định danh tài khoản của bạn trong hệ thống.',
+            title: 'Tên tải khoản',
+            description: 'Nhập tên tài khoản duy nhất. Đây là thông tin định danh tài khoản của bạn trong hệ thống.',
             position: 'bottom'
           }
         },

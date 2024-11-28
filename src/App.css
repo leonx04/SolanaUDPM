@@ -171,15 +171,15 @@
   .menu-toggle {
     display: none;
   }
-  
+
   .sidebar {
     left: 0 !important;
   }
-  
+
   .sidebar-overlay {
     display: none;
   }
-  
+
   .main-content {
     margin-left: var(--sidebar-width);
   }
@@ -258,7 +258,8 @@
 .main-content {
   flex: 1;
   margin-left: 280px;
-  min-width: 0; /* Quan trọng để tránh overflow */
+  min-width: 0;
+  /* Quan trọng để tránh overflow */
   transition: margin-left 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -287,7 +288,8 @@
   padding: 1.5rem;
   flex: 1;
   overflow-x: hidden;
-  min-width: 0; /* Quan trọng để tránh overflow */
+  min-width: 0;
+  /* Quan trọng để tránh overflow */
 }
 
 /* Card và Table container */
@@ -305,7 +307,8 @@
 
 /* Table styles */
 .mobile-table-wrapper {
-  min-width: 800px; /* Minimum width for table content */
+  min-width: 800px;
+  /* Minimum width for table content */
 }
 
 /* Responsive Overlay */
@@ -357,7 +360,6 @@
   }
 }
 
-/* Mobile Responsive */
 /* Mobile Responsive Top Navigation */
 @media (max-width: 767px) {
   .top-nav {
@@ -367,38 +369,33 @@
   }
 
   .top-nav > .d-flex {
+    flex-direction: row;
+    align-items: center;
     width: 100%;
-    flex-direction: column;
-    align-items: stretch !important;
-  }
-
-  .top-nav > .d-flex > * {
-    margin: 0.25rem 0 !important;
   }
 
   .top-nav .menu-toggle {
-    align-self: flex-start;
-    margin-bottom: 0.5rem;
+    margin: 0;
+    padding: 0.25rem;
   }
 
   .top-nav .theme-toggle {
-    align-self: flex-start;
-    margin-bottom: 0.5rem;
+    margin: 0;
+    padding: 0.25rem;
   }
 
   .top-nav .wallet-connection-container {
-    flex-direction: column;
-    align-items: stretch !important;
+    flex-grow: 1;
+    margin-left: 1rem;
+    margin-right: 1rem;
   }
 
   .top-nav .wallet-connection-container > * {
-    margin: 0.25rem 0 !important;
     width: 100%;
   }
 
-  .top-nav .user-dropdown {
-    margin-top: 0.5rem;
-    align-self: flex-start;
+  .top-nav .dropdown-menu {
+    width: 100%;
   }
 }
 /* Giữ nguyên các CSS hiện tại và thêm đoạn sau vào cuối file */
@@ -518,6 +515,7 @@
 .dark-theme .theme-toggle:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
+
 /* Theme Text Colors for Top Navigation */
 .light-theme .top-nav {
   color: var(--light-text-primary);
@@ -527,7 +525,7 @@
   color: var(--dark-text-primary);
 }
 
-.light-theme .top-nav .text-muted  {
+.light-theme .top-nav .text-muted {
   color: var(--light-text-secondary) !important;
 }
 
@@ -535,7 +533,7 @@
   color: var(--dark-text-secondary) !important;
 }
 
-.light-theme .top-nav .text-dark .text-muted{
+.light-theme .top-nav .text-dark .text-muted {
   color: var(--light-text-primary) !important;
 }
 
@@ -566,15 +564,16 @@
 
 .light-theme .dropdown-item:hover,
 .light-theme .dropdown-item:focus {
-  background-color: rgba(0,0,0,0.05);
+  background-color: rgba(0, 0, 0, 0.05);
   color: var(--light-text-primary);
 }
 
 .dark-theme .dropdown-item:hover,
 .dark-theme .dropdown-item:focus {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(255, 255, 255, 0.1);
   color: var(--dark-text-primary);
 }
+
 /* Dark Mode Styles for Marketplace Home */
 .dark-theme .marketplace-home {
   background-color: var(--dark-bg-primary);
@@ -653,17 +652,21 @@
 .dark-theme .marketplace-home .modal-footer {
   border-top-color: var(--dark-border-color);
 }
+
 /* Text color class */
 .theme-text {
-  color: var(--light-text-primary);  /* Mặc định màu sáng */
+  color: var(--light-text-primary);
+  /* Mặc định màu sáng */
 }
 
 .light-theme .theme-text {
-  color: var(--light-text-primary);  /* Màu sáng */
+  color: var(--light-text-primary);
+  /* Màu sáng */
 }
 
 .dark-theme .theme-text {
-  color: var(--dark-text-primary);   /* Màu tối */
+  color: var(--dark-text-primary);
+  /* Màu tối */
 }
 
 /* Đảm bảo các phần tử khác sẽ tự động thay đổi màu sắc */
@@ -682,20 +685,19 @@
   background-color: var(--dark-bg-primary);
   color: var(--dark-text-primary);
 }
+
 /* Modern Gradient Background for Content Area */
 .light-theme .content-area {
-  background: linear-gradient(135deg, 
-    rgba(247, 250, 252, 0.9), 
-    rgba(237, 242, 247, 0.7)
-  );
+  background: linear-gradient(135deg,
+      rgba(247, 250, 252, 0.9),
+      rgba(237, 242, 247, 0.7));
   background-attachment: fixed;
 }
 
 .dark-theme .content-area {
-  background: linear-gradient(135deg, 
-    rgba(18, 18, 18, 0.9), 
-    rgba(30, 30, 30, 0.7)
-  );
+  background: linear-gradient(135deg,
+      rgba(18, 18, 18, 0.9),
+      rgba(30, 30, 30, 0.7));
   background-attachment: fixed;
 }
 
@@ -741,7 +743,9 @@
 }
 
 /* Soft Gradient Borders for Interactive Elements */
-.btn, .form-control, .dropdown-toggle {
+.btn,
+.form-control,
+.dropdown-toggle {
   border-radius: 8px;
   transition: all 0.3s ease;
 }
@@ -758,19 +762,17 @@
 
 /* Enhanced Sidebar with Glassmorphism */
 .light-theme .sidebar {
-  background: linear-gradient(135deg, 
-    rgba(67, 97, 238, 0.9), 
-    rgba(63, 55, 201, 0.9)
-  );
+  background: linear-gradient(135deg,
+      rgba(67, 97, 238, 0.9),
+      rgba(63, 55, 201, 0.9));
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .dark-theme .sidebar {
-  background: linear-gradient(135deg, 
-    rgba(44, 62, 80, 0.9), 
-    rgba(52, 73, 94, 0.9)
-  );
+  background: linear-gradient(135deg,
+      rgba(44, 62, 80, 0.9),
+      rgba(52, 73, 94, 0.9));
   backdrop-filter: blur(15px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }

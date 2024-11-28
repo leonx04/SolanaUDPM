@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Modal, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
 
@@ -50,46 +50,106 @@ const usePagination = (items, initialPerPage = 10) => {
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
 
+  // Hàm tạo danh sách các trang để hiển thị
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5; // Số trang tối đa hiển thị
+
+    // Nếu tổng số trang nhỏ hơn maxPagesToShow, hiển thị hết
+    if (totalPages <= maxPagesToShow) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    // Logic để hiển thị các trang một cách thông minh
+    const leftSide = Math.floor((maxPagesToShow - 3) / 2);
+    const rightSide = maxPagesToShow - leftSide - 3;
+
+    // Nếu trang hiện tại ở đầu
+    if (currentPage <= maxPagesToShow - 2) {
+      return [
+        ...Array.from({ length: maxPagesToShow - 1 }, (_, i) => i + 1),
+        '...',
+        totalPages
+      ];
+    }
+
+    // Nếu trang hiện tại ở cuối
+    if (currentPage > totalPages - (maxPagesToShow - 2)) {
+      return [
+        1,
+        '...',
+        ...Array.from({ length: maxPagesToShow - 1 }, (_, i) =>
+          totalPages - (maxPagesToShow - 2) + i
+        )
+      ];
+    }
+
+    // Các trường hợp ở giữa
+    return [
+      1,
+      '...',
+      ...Array.from({ length: maxPagesToShow - 2 }, (_, i) =>
+        currentPage - leftSide + i
+      ),
+      '...',
+      totalPages
+    ];
+  };
+
+  const pageNumbers = getPageNumbers();
+
   return (
     <nav>
-      <ul className="pagination mb-0">
-        {['Đầu', 'Trước', 'Tiếp', 'Cuối'].map((label, index) => {
-          const isStart = index === 0;
-          const isBack = index === 1;
-          const isNext = index === 2;
-          const isEnd = index === 3;
+      <ul className="pagination mb-0 justify-content-center">
+        {/* Nút Previous */}
+        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            &#10094; Trước
+          </Button>
+        </li>
 
-          const isDisabled =
-            ((isStart || isBack) && currentPage === 1) ||
-            ((isNext || isEnd) && currentPage === totalPages);
-
-          const pageToGo =
-            isStart ? 1 :
-              isBack ? currentPage - 1 :
-                isNext ? currentPage + 1 :
-                  totalPages;
+        {/* Các nút số trang */}
+        {pageNumbers.map((page, index) => {
+          if (page === '...') {
+            return (
+              <li key={`ellipsis-${index}`} className="page-item">
+                <span className="page-link text-muted">...</span>
+              </li>
+            );
+          }
 
           return (
             <li
-              key={label}
-              className={`page-item ${isDisabled ? 'disabled' : ''}`}
+              key={page}
+              className={`page-item ${currentPage === page ? 'active' : ''}`}
             >
               <Button
-                variant="outline-secondary"
+                variant={currentPage === page ? 'primary' : 'outline-secondary'}
                 size="sm"
-                className={index > 0 ? 'ms-2' : ''}
-                onClick={() => onPageChange(pageToGo)}
-                disabled={isDisabled}
+                onClick={() => onPageChange(page)}
+                className="mx-1"
               >
-                {label}
+                {page}
               </Button>
             </li>
           );
         })}
-        <li className="page-item mx-2">
-          <span className="page-link">
-            Trang {currentPage} / {totalPages}
-          </span>
+
+        {/* Nút Next */}
+        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Tiếp &#10095;
+          </Button>
         </li>
       </ul>
     </nav>
@@ -228,7 +288,6 @@ const MarketplaceHome = ({ referenceId }) => {
     }
   };
 
-
   // Render loading state
   if (loading) {
     return (
@@ -277,14 +336,38 @@ const MarketplaceHome = ({ referenceId }) => {
         </h1>
 
         {/* Pagination and display controls */}
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <div className="d-flex align-items-center">
-            <span className="me-3">
+        <div className="row g-3 align-items-center">
+          <div className="col-12 col-md-4 d-flex align-items-center justify-content-between justify-content-md-start">
+            <span className="me-3 text-nowrap">
               Hiển thị: {currentItems.length} / {totalResults} sản phẩm
             </span>
             <Form.Select
               size="sm"
               style={{ width: 'auto' }}
+              value={perPage}
+              onChange={(e) => changePerPage(Number(e.target.value))}
+              className="d-md-none d-block"
+            >
+              {[5, 10, 20, 50].map((num) => (
+                <option key={num} value={num}>
+                  {num} sản phẩm/trang
+                </option>
+              ))}
+            </Form.Select>
+          </div>
+
+          <div className="col-12 col-md-4 d-flex justify-content-center">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={changePage}
+            />
+          </div>
+
+          <div className="col-12 col-md-4 d-none d-md-block text-end">
+            <Form.Select
+              size="sm"
+              style={{ width: 'auto', float: 'right' }}
               value={perPage}
               onChange={(e) => changePerPage(Number(e.target.value))}
             >
@@ -295,16 +378,11 @@ const MarketplaceHome = ({ referenceId }) => {
               ))}
             </Form.Select>
           </div>
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={changePage}
-          />
         </div>
 
+
         {/* Product grid */}
-        <div className="row row-cols-1 row-cols-md-3 g-4">
+        <div className="row row-cols-1 row-cols-md-3 g-4 mt-2">
           {currentItems.map((itemData) => {
             const item = itemData.item;
             return (
