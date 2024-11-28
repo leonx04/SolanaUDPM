@@ -5,7 +5,7 @@
   "dependencies": {
     "@popperjs/core": "^2.11.8",
     "@react-oauth/google": "^0.12.1",
-    "@solana/buffer-layout": "^4.0.1",
+    "@solana/buffer-layout": "4.0.1",
     "@solana/spl-token": "^0.4.9",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/web3.js": "^1.95.5",
@@ -27,15 +27,15 @@
     "react-router-dom": "^6.28.0",
     "source-map-loader": "^5.0.0",
     "styled-components": "^6.1.13",
-    "superstruct": "^2.0.2",
+    "superstruct": "2.0.2",
     "unidecode": "^1.1.0",
     "uuid": "^11.0.3",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build --source-map=false",
+    "test": "react-app-rewired test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -46,14 +46,13 @@
   },
   "browserslist": {
     "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
+      "defaults",
+      "not IE 11"
     ],
     "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
+      "last 2 chrome versions",
+      "last 2 firefox versions",
+      "last 2 safari versions"
     ]
   },
   "devDependencies": {
@@ -64,6 +63,7 @@
     "@babel/preset-react": "^7.22.0",
     "ajv": "^7.2.4",
     "eslint": "^8.50.0",
+    "react-app-rewired": "^2.2.1",
     "react-scripts": "^5.0.1"
   }
 }

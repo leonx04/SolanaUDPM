@@ -52,7 +52,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 
   // Hàm tạo danh sách các trang để hiển thị
   const getPageNumbers = () => {
-    const pages = [];
     const maxPagesToShow = 5; // Số trang tối đa hiển thị
 
     // Nếu tổng số trang nhỏ hơn maxPagesToShow, hiển thị hết
@@ -62,7 +61,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 
     // Logic để hiển thị các trang một cách thông minh
     const leftSide = Math.floor((maxPagesToShow - 3) / 2);
-    const rightSide = maxPagesToShow - leftSide - 3;
 
     // Nếu trang hiện tại ở đầu
     if (currentPage <= maxPagesToShow - 2) {
@@ -241,8 +239,9 @@ const MarketplaceHome = ({ referenceId }) => {
   } = usePagination(filteredItems);
 
   // Buy item handler
-  const handleBuyItem = async (item) => {
-    setSelectedItem(item);
+  const handleBuyItem = async (itemData) => {
+    // Thay vì để trực tiếp itemData, hãy trích xuất item
+    setSelectedItem(itemData.item);
     setBuyError(null);
   };
 
@@ -414,7 +413,7 @@ const MarketplaceHome = ({ referenceId }) => {
                       </div>
                       <Button
                         variant="outline-primary"
-                        onClick={() => handleBuyItem(itemData.item)}
+                        onClick={() => handleBuyItem(itemData)}
                       >
                         Mua ngay
                       </Button>
@@ -426,8 +425,6 @@ const MarketplaceHome = ({ referenceId }) => {
           })}
         </div>
       </div>
-
-      {/* Purchase Confirmation Modal */}
       {/* Purchase Confirmation Modal */}
       {selectedItem && (
         <Modal show={!!selectedItem} onHide={() => setSelectedItem(null)} size="lg">
