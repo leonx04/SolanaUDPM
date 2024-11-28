@@ -6,6 +6,7 @@ import { apiKey } from '../api';
 import unidecode from 'unidecode';
 
 const apiBaseUrl = "https://api.gameshift.dev/nx/users";
+const PHANTOM_WALLET_DOWNLOAD_LINK = "https://phantom.app/download";
 
 const AuthForm = ({ setIsLoggedIn, setUserData }) => {
   // Trạng thái quản lý dữ liệu biểu mẫu
@@ -46,7 +47,7 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
         {
           element: '#referenceId-input',
           popover: {
-            title: 'Tên tải khoản',
+            title: 'Tên tài khoản',
             description: 'Nhập tên tài khoản duy nhất. Đây là thông tin định danh tài khoản của bạn trong hệ thống.',
             position: 'bottom'
           }
@@ -77,7 +78,19 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
   // Kết nối với Phantom Wallet
   const connectPhantomWallet = async () => {
     if (!isPhantomInstalled) {
-      setErrorMessage('Phantom Wallet chưa được cài đặt');
+      setErrorMessage(
+        <div>
+          Phantom Wallet chưa được cài đặt.
+          <a
+            href={PHANTOM_WALLET_DOWNLOAD_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="alert-link ms-1"
+          >
+            Tải Phantom Wallet tại đây
+          </a>
+        </div>
+      );
       return null;
     }
 
@@ -113,6 +126,22 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
       setErrorMessage('Email không hợp lệ.');
       return false;
     }
+    if (isRegistering && !isPhantomInstalled) {
+      setErrorMessage(
+        <div>
+          Phantom Wallet chưa được cài đặt.
+          <a
+            href={PHANTOM_WALLET_DOWNLOAD_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="alert-link ms-1"
+          >
+            Tải Phantom Wallet tại đây
+          </a>
+        </div>
+      );
+      return false;
+    }
     return true;
   };
 
@@ -126,7 +155,25 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
 
     try {
       if (isRegister) {
-        // Quy trình đăng ký chi tiết
+        // Kiểm tra và yêu cầu kết nối Phantom Wallet
+        if (!isPhantomInstalled) {
+          setErrorMessage(
+            <div>
+              Phantom Wallet chưa được cài đặt.
+              <a
+                href={PHANTOM_WALLET_DOWNLOAD_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="alert-link ms-1"
+              >
+                Tải Phantom Wallet tại đây
+              </a>
+            </div>
+          );
+          setIsLoading(false);
+          return;
+        }
+
         const walletAddress = await connectPhantomWallet();
         if (!walletAddress) {
           setIsLoading(false);
@@ -249,6 +296,14 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
                 {isRegistering && !isPhantomInstalled && (
                   <div className="alert alert-warning py-2 mt-3 mb-3 text-center small">
                     Vui lòng cài đặt Phantom Wallet để đăng ký
+                    <a
+                      href={PHANTOM_WALLET_DOWNLOAD_LINK}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="alert-link ms-1"
+                    >
+                      Tải tại đây
+                    </a>
                   </div>
                 )}
 
