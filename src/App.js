@@ -48,8 +48,13 @@ function App() {
   // Hàm lấy số dư USDC
   const getUsdcBalance = async (connection, walletPublicKey) => {
     try {
+      // Chuyển đổi PublicKey nếu cần
+      const publicKey = typeof walletPublicKey === 'string'
+        ? new PublicKey(walletPublicKey)
+        : walletPublicKey;
+
       const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-        walletPublicKey,
+        publicKey,
         { programId: TOKEN_PROGRAM_ID }
       );
 
@@ -59,33 +64,24 @@ function App() {
 
       if (usdcAccount) {
         const usdcBalance = usdcAccount.account.data.parsed.info.tokenAmount.uiAmount;
-        return usdcBalance;
+        return usdcBalance || 0;
       }
 
-      return 0; // Không tìm thấy số dư, trả về 0
+      return 0; // Không tìm thấy tài khoản USDC
     } catch (error) {
       console.error('Lỗi khi lấy số dư USDC:', error);
-      return 0; // Nếu có lỗi, trả về 0
+      return 0;
     }
   };
-
-
   // Hàm fetch số dư USDC
   const fetchUsdcBalance = useCallback(async () => {
     if (walletAddress) {
       try {
-        const publicKey = new PublicKey(walletAddress);
-        const balance = await getUsdcBalance(connection, publicKey);
-
-        // Kiểm tra nếu balance là null hoặc NaN
-        if (balance !== null && !isNaN(balance)) {
-          setUsdcBalance(balance);  // Cập nhật số dư USDC nếu có
-        } else {
-          setUsdcBalance(0);  // Nếu không có số dư, hiển thị là 0
-        }
+        const balance = await getUsdcBalance(connection, walletAddress);
+        setUsdcBalance(balance);
       } catch (error) {
         console.error('Lỗi khi lấy số dư USDC:', error);
-        setUsdcBalance(0);  // Trường hợp có lỗi, hiển thị số dư là 0
+        setUsdcBalance(0);
       }
     }
   }, [walletAddress, connection]);
@@ -97,6 +93,13 @@ function App() {
     document.body.classList.remove('light-theme', 'dark-theme');
     document.body.classList.add(`${theme}-theme`);
   }, [theme]);
+
+  
+  useEffect(() => {
+    if (walletAddress) {
+      fetchUsdcBalance();
+    }
+  }, [walletAddress, fetchUsdcBalance]);
 
   // Hàm thay đổi theme
   const toggleTheme = () => {
