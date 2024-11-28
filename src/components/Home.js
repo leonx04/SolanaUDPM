@@ -239,7 +239,7 @@ const MarketplaceHome = ({ referenceId }) => {
 
     // Cleanup interval khi component bị hủy
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchAllItems]);
 
   // Fetch data with cleanup
   useEffect(() => {
