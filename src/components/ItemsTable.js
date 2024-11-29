@@ -140,16 +140,30 @@ const ItemsTable = ({ ownerReferenceId }) => {
         }
     }, [ownerReferenceId, marketFilter]);
 
+    // Thay đổi cách tính currentItems và totalPages
+    const filteredItems = items.filter(itemData => {
+        const { type, item } = itemData;
 
+        // Lọc theo loại và trạng thái thị trường
+        if (type === 'Currency') return false;
 
+        if (marketFilter === 'forSale') {
+            return item.priceCents > 0 && item.status === 'Committed';
+        }
 
-    // Tính toán các giá trị phân trang
+        if (marketFilter === 'notForSale') {
+            return !item.priceCents || item.priceCents === 0;
+        }
+
+        return true;
+    });
+
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = items.slice(indexOfFirstItem, indexOfLastItem);
+    const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
 
-    // Tính tổng số trang
-    const totalPages = Math.ceil(items.length / itemsPerPage);
+    // Tính tổng số trang dựa trên filteredItems
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
 
     // Tự động tải items khi component mount hoặc các dependency thay đổi
@@ -583,10 +597,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                         ))}
                                     </select>
                                 </div>
-                                <span className="ms-3 text-muted">
-                                    Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, items.length)}
-                                    {' '}của {items.length} mục
-                                </span>
+
                             </div>
                             <Pagination className="mb-0">
                                 <Pagination.First
