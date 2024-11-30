@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { Modal, Button, Form, InputGroup, Pagination } from "react-bootstrap";
+import React, { useCallback, useEffect, useState } from "react";
+import { Button, Form, InputGroup, Modal, Pagination } from "react-bootstrap";
 import { apiKey } from '../api';
 import '../App.css';
 
@@ -30,7 +30,7 @@ const PurchaseHistory = ({ referenceId }) => {
 
   const checkTransactionStatus = useCallback(async (paymentId) => {
     const currentTime = Date.now();
-  
+
     // Kiểm tra cache trước
     if (
       transactionStatusCache[paymentId] &&
@@ -38,14 +38,14 @@ const PurchaseHistory = ({ referenceId }) => {
     ) {
       return transactionStatusCache[paymentId].status;
     }
-  
+
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         // Thêm độ trễ để tránh gửi quá nhiều request
         if (attempt > 1) {
           await new Promise(resolve => setTimeout(resolve, attempt * RATE_LIMIT_DELAY));
         }
-  
+
         const response = await fetch(
           `https://api.gameshift.dev/nx/payments/${paymentId}`,
           {
@@ -56,7 +56,7 @@ const PurchaseHistory = ({ referenceId }) => {
             },
           }
         );
-  
+
         if (!response.ok) {
           // Kiểm tra mã trạng thái cụ thể
           if (response.status === 429) {
@@ -65,33 +65,33 @@ const PurchaseHistory = ({ referenceId }) => {
           }
           throw new Error("Không thể kiểm tra trạng thái giao dịch.");
         }
-  
+
         const data = await response.json();
-  
+
         // Lưu vào cache
         transactionStatusCache[paymentId] = {
           status: data.status,
           timestamp: currentTime
         };
-  
+
         return data.status;
       } catch (error) {
         console.error(`Lỗi kiểm tra trạng thái giao dịch (Attempt ${attempt}):`, error);
-  
+
         // Nếu là lần thử cuối cùng
         if (attempt === MAX_RETRIES) {
           return null;
         }
       }
     }
-  
+
     return null;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  
+
   const fetchPurchaseHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
-  
+
     try {
       const url = "https://api.gameshift.dev/nx/payments";
       const options = {
@@ -101,28 +101,28 @@ const PurchaseHistory = ({ referenceId }) => {
           "x-api-key": apiKey,
         },
       };
-  
+
       const response = await fetch(url, options);
       const data = await response.json();
-  
+
       if (Array.isArray(data.data)) {
         const userPurchases = data.data.filter(
           (purchase) => purchase.purchaser.referenceId === referenceId
         );
-  
+
         // Kiểm tra trạng thái giao dịch với độ trễ giữa các yêu cầu
         const updatedPurchases = [];
         for (const purchase of userPurchases) {
           // Thêm độ trễ ngẫu nhiên để tránh bị giới hạn
           await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
-          
+
           const status = await checkTransactionStatus(purchase.id);
           updatedPurchases.push({
             ...purchase,
             status: status || purchase.status
           });
         }
-  
+
         setPurchases(updatedPurchases);
         setFilteredPurchases(updatedPurchases);
         setCurrentPage(1);
@@ -378,7 +378,17 @@ const PurchaseHistory = ({ referenceId }) => {
                 <td>{purchase.sku.item.description}</td>
                 <td>{purchase.price.naturalAmount} USDC</td>
                 <td>
-                  {new Date(purchase.sku.item.created).toLocaleDateString()}
+                  {new Date(purchase.sku.item.created).toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false, // Sử dụng định dạng 24h
+                    timeZone: 'UTC' // Hoặc đổi sang múi giờ khác nếu cần
+                  })}
+
                 </td>
                 <td>
                   <span
