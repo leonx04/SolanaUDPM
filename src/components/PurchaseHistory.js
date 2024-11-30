@@ -20,7 +20,75 @@ const PurchaseHistory = ({ referenceId }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  // Hàm lấy lịch sử mua hàng với khả năng kiểm tra trạng thái
+
+  const transactionStatusCache = {};
+  const TRANSACTION_STATUS_CACHE_TIME = 2 * 60 * 1000; // 2 phút
+
+  // Thêm giới hạn tốc độ để tránh bị chặn bởi API
+  const RATE_LIMIT_DELAY = 500; // Độ trễ 500ms giữa các yêu cầu
+  const MAX_RETRIES = 3; // Số lần thử lại tối đa
+
+  const checkTransactionStatus = async (paymentId) => {
+    const currentTime = Date.now();
+
+    // Kiểm tra cache trước
+    if (
+      transactionStatusCache[paymentId] &&
+      (currentTime - transactionStatusCache[paymentId].timestamp) < TRANSACTION_STATUS_CACHE_TIME
+    ) {
+      return transactionStatusCache[paymentId].status;
+    }
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        // Thêm độ trễ để tránh gửi quá nhiều request
+        if (attempt > 1) {
+          await new Promise(resolve => setTimeout(resolve, attempt * RATE_LIMIT_DELAY));
+        }
+
+        const response = await fetch(
+          `https://api.gameshift.dev/nx/payments/${paymentId}`,
+          {
+            method: "GET",
+            headers: {
+              accept: "application/json",
+              "x-api-key": apiKey,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          // Kiểm tra mã trạng thái cụ thể
+          if (response.status === 429) {
+            console.warn(`Yêu cầu bị giới hạn (Attempt ${attempt}): ${paymentId}`);
+            continue; // Thử lại
+          }
+          throw new Error("Không thể kiểm tra trạng thái giao dịch.");
+        }
+
+        const data = await response.json();
+
+        // Lưu vào cache
+        transactionStatusCache[paymentId] = {
+          status: data.status,
+          timestamp: currentTime
+        };
+
+        return data.status;
+      } catch (error) {
+        console.error(`Lỗi kiểm tra trạng thái giao dịch (Attempt ${attempt}):`, error);
+
+        // Nếu là lần thử cuối cùng
+        if (attempt === MAX_RETRIES) {
+          return null;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  // Sửa đổi fetchPurchaseHistory để xử lý các yêu cầu API một cách tuần tự
   const fetchPurchaseHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -43,16 +111,15 @@ const PurchaseHistory = ({ referenceId }) => {
           (purchase) => purchase.purchaser.referenceId === referenceId
         );
 
-        // Kiểm tra trạng thái giao dịch cho từng đơn hàng
-        const updatedPurchases = await Promise.all(
-          userPurchases.map(async (purchase) => {
-            const status = await checkTransactionStatus(purchase.id);
-            return {
-              ...purchase,
-              status: status || purchase.status
-            };
-          })
-        );
+        // Kiểm tra trạng thái giao dịch một cách tuần tự
+        const updatedPurchases = [];
+        for (const purchase of userPurchases) {
+          const status = await checkTransactionStatus(purchase.id);
+          updatedPurchases.push({
+            ...purchase,
+            status: status || purchase.status
+          });
+        }
 
         setPurchases(updatedPurchases);
         setFilteredPurchases(updatedPurchases);
@@ -66,51 +133,6 @@ const PurchaseHistory = ({ referenceId }) => {
       setLoading(false);
     }
   }, [referenceId]);
-
-  const transactionStatusCache = {};
-  const TRANSACTION_STATUS_CACHE_TIME = 2 * 60 * 1000; // 2 phút
-
-  const checkTransactionStatus = async (paymentId) => {
-    const currentTime = Date.now();
-
-    // Kiểm tra cache trước
-    if (
-      transactionStatusCache[paymentId] &&
-      (currentTime - transactionStatusCache[paymentId].timestamp) < TRANSACTION_STATUS_CACHE_TIME
-    ) {
-      return transactionStatusCache[paymentId].status;
-    }
-
-    try {
-      const response = await fetch(
-        `https://api.gameshift.dev/nx/payments/${paymentId}`,
-        {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-            "x-api-key": apiKey,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Không thể kiểm tra trạng thái giao dịch.");
-      }
-
-      const data = await response.json();
-
-      // Lưu vào cache
-      transactionStatusCache[paymentId] = {
-        status: data.status,
-        timestamp: currentTime
-      };
-
-      return data.status;
-    } catch (error) {
-      console.error("Lỗi kiểm tra trạng thái giao dịch:", error);
-      return null;
-    }
-  };
 
   // Hàm lọc và tìm kiếm
   const applyFiltersAndSearch = useCallback(() => {
