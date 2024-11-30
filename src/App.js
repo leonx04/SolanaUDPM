@@ -15,6 +15,7 @@ import AuthForm from "./components/AuthForm";
 import Home from "./components/Home";
 import MyNfts from "./components/MyNfts";
 import User from "./components/User";
+import PurchaseHistory from "./components/PurchaseHistory";
 
 
 // Địa chỉ token USDC chính thức trên Solana devnet
@@ -94,7 +95,7 @@ function App() {
     document.body.classList.add(`${theme}-theme`);
   }, [theme]);
 
-  
+
   useEffect(() => {
     if (walletAddress) {
       fetchUsdcBalance();
@@ -290,6 +291,15 @@ function App() {
                     <i className="bi bi-collection me-2"></i>
                     NFT của tôi
                   </NavLink>
+                  <NavLink
+                    to="/purchase-history"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={closeSidebarOnMobile}
+                  >
+                    <i className="bi bi-collection me-2"></i>
+                    Giao dịch
+                  </NavLink>
                 </div>
               </div>
 
@@ -406,6 +416,9 @@ function App() {
                   <Route path="/" element={<Navigate to="/home" replace />} />
                   <Route path="/home" element={<Home referenceId={userData?.referenceId} />} />
                   <Route path="/my-nfts" element={<MyNfts referenceId={userData?.referenceId} />} />
+                  <Route
+                    path="/purchase-history" element={<PurchaseHistory referenceId={userData?.referenceId} />}
+                  />
                   <Route
                     path="/user"
                     element={

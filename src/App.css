@@ -825,3 +825,27 @@
 .nft-card:hover {
   transform: rotateY(-5deg);
 }
+
+/* Định dạng cho ảnh phóng to */
+.image-zoom-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.zoomed-image {
+  max-width: 90%;
+  max-height: 90%;
+  transition: transform 0.3s ease-in-out;
+}
+
+.zoomed-image:hover {
+  transform: scale(1.1); /* Phóng to khi hover */
+}
+
+
+/* Hiệu ứng hover cho dòng khi di chuột vào */
+.table tbody tr:hover {
+  background-color: #f1f1f1; /* Thay đổi màu nền khi hover vào dòng */
+  cursor: pointer; /* Thêm con trỏ "pointer" để hiển thị như một liên kết */
+}
