@@ -28,9 +28,9 @@ const PurchaseHistory = ({ referenceId }) => {
   const RATE_LIMIT_DELAY = 500; // Độ trễ 500ms giữa các yêu cầu
   const MAX_RETRIES = 3; // Số lần thử lại tối đa
 
-  const checkTransactionStatus = async (paymentId) => {
+  const checkTransactionStatus = useCallback(async (paymentId) => {
     const currentTime = Date.now();
-
+  
     // Kiểm tra cache trước
     if (
       transactionStatusCache[paymentId] &&
@@ -38,14 +38,14 @@ const PurchaseHistory = ({ referenceId }) => {
     ) {
       return transactionStatusCache[paymentId].status;
     }
-
+  
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         // Thêm độ trễ để tránh gửi quá nhiều request
         if (attempt > 1) {
           await new Promise(resolve => setTimeout(resolve, attempt * RATE_LIMIT_DELAY));
         }
-
+  
         const response = await fetch(
           `https://api.gameshift.dev/nx/payments/${paymentId}`,
           {
@@ -56,7 +56,7 @@ const PurchaseHistory = ({ referenceId }) => {
             },
           }
         );
-
+  
         if (!response.ok) {
           // Kiểm tra mã trạng thái cụ thể
           if (response.status === 429) {
@@ -65,34 +65,33 @@ const PurchaseHistory = ({ referenceId }) => {
           }
           throw new Error("Không thể kiểm tra trạng thái giao dịch.");
         }
-
+  
         const data = await response.json();
-
+  
         // Lưu vào cache
         transactionStatusCache[paymentId] = {
           status: data.status,
           timestamp: currentTime
         };
-
+  
         return data.status;
       } catch (error) {
         console.error(`Lỗi kiểm tra trạng thái giao dịch (Attempt ${attempt}):`, error);
-
+  
         // Nếu là lần thử cuối cùng
         if (attempt === MAX_RETRIES) {
           return null;
         }
       }
     }
-
+  
     return null;
-  };
-
-  // Sửa đổi fetchPurchaseHistory để xử lý các yêu cầu API một cách tuần tự
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  
   const fetchPurchaseHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
-
+  
     try {
       const url = "https://api.gameshift.dev/nx/payments";
       const options = {
@@ -102,25 +101,28 @@ const PurchaseHistory = ({ referenceId }) => {
           "x-api-key": apiKey,
         },
       };
-
+  
       const response = await fetch(url, options);
       const data = await response.json();
-
+  
       if (Array.isArray(data.data)) {
         const userPurchases = data.data.filter(
           (purchase) => purchase.purchaser.referenceId === referenceId
         );
-
-        // Kiểm tra trạng thái giao dịch một cách tuần tự
+  
+        // Kiểm tra trạng thái giao dịch với độ trễ giữa các yêu cầu
         const updatedPurchases = [];
         for (const purchase of userPurchases) {
+          // Thêm độ trễ ngẫu nhiên để tránh bị giới hạn
+          await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
+          
           const status = await checkTransactionStatus(purchase.id);
           updatedPurchases.push({
             ...purchase,
             status: status || purchase.status
           });
         }
-
+  
         setPurchases(updatedPurchases);
         setFilteredPurchases(updatedPurchases);
         setCurrentPage(1);
@@ -132,7 +134,7 @@ const PurchaseHistory = ({ referenceId }) => {
     } finally {
       setLoading(false);
     }
-  }, [referenceId]);
+  }, [referenceId, checkTransactionStatus]);
 
   // Hàm lọc và tìm kiếm
   const applyFiltersAndSearch = useCallback(() => {
