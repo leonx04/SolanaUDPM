@@ -1,16 +1,15 @@
 import axios from 'axios';
+import { driver as Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import React, { useEffect, useState } from 'react';
-import { driver as Driver } from 'driver.js';
-import { apiKey } from '../api';
 import unidecode from 'unidecode';
-import PurchaseHistory from "./PurchaseHistory";
+import { apiKey } from '../api';
 
 const apiBaseUrl = "https://api.gameshift.dev/nx/users";
 const PHANTOM_WALLET_DOWNLOAD_LINK = "https://phantom.app/download";
 
 const AuthForm = ({ setIsLoggedIn, setUserData }) => {
-  
+
   // Trạng thái quản lý dữ liệu biểu mẫu
   const [formData, setFormData] = useState({
     referenceId: '',  // Mã định danh duy nhất của người dùng

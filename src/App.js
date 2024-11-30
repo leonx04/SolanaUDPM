@@ -297,7 +297,7 @@ function App() {
                       `nav-link ${isActive ? 'active' : ''}`}
                     onClick={closeSidebarOnMobile}
                   >
-                    <i className="bi bi-collection me-2"></i>
+                    <i className="bi bi-journal-text me-2"></i>
                     Giao dịch
                   </NavLink>
                 </div>

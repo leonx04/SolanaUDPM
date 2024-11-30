@@ -1,18 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Button } from "react-bootstrap";
+import React, { useEffect, useState, useCallback } from "react";
+import { Modal, Button, Form, InputGroup, Pagination } from "react-bootstrap";
 import { apiKey } from '../api';
 import '../App.css';
 
 const PurchaseHistory = ({ referenceId }) => {
   const [purchases, setPurchases] = useState([]);
+  const [filteredPurchases, setFilteredPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [imageToShow, setImageToShow] = useState(null);
 
-  // Hàm lấy lịch sử mua hàng
-  const fetchPurchaseHistory = async () => {
+  // Trạng thái cho bộ lọc và tìm kiếm
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Tất cả');
+
+  // Trạng thái phân trang nâng cao
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Hàm lấy lịch sử mua hàng với khả năng kiểm tra trạng thái
+  const fetchPurchaseHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -33,7 +42,21 @@ const PurchaseHistory = ({ referenceId }) => {
         const userPurchases = data.data.filter(
           (purchase) => purchase.purchaser.referenceId === referenceId
         );
-        setPurchases(userPurchases);
+
+        // Kiểm tra trạng thái giao dịch cho từng đơn hàng
+        const updatedPurchases = await Promise.all(
+          userPurchases.map(async (purchase) => {
+            const status = await checkTransactionStatus(purchase.id);
+            return {
+              ...purchase,
+              status: status || purchase.status
+            };
+          })
+        );
+
+        setPurchases(updatedPurchases);
+        setFilteredPurchases(updatedPurchases);
+        setCurrentPage(1);
       } else {
         throw new Error("Dữ liệu trả về không đúng định dạng.");
       }
@@ -42,23 +65,9 @@ const PurchaseHistory = ({ referenceId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [referenceId]);
 
-  const handleViewDetails = (purchase) => {
-    setSelectedPurchase(purchase);
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedPurchase(null);
-  };
-
-  const handleImageClick = (imageUrl) => {
-    setImageToShow(imageUrl); // Cập nhật ảnh cần phóng to
-  };
-
-  // Kiểm tra trạng thái giao dịch
+  // Hàm kiểm tra trạng thái giao dịch
   const checkTransactionStatus = async (paymentId) => {
     try {
       const response = await fetch(
@@ -67,7 +76,7 @@ const PurchaseHistory = ({ referenceId }) => {
           method: "GET",
           headers: {
             accept: "application/json",
-            "x-api-key": apiKey, // Thay bằng API key của bạn
+            "x-api-key": apiKey,
           },
         }
       );
@@ -77,48 +86,170 @@ const PurchaseHistory = ({ referenceId }) => {
       }
 
       const data = await response.json();
-
-      // Kiểm tra nếu giao dịch đã hết hạn
-      if (data.status === "Expired") {
-        // Cập nhật trạng thái giao dịch thành 'Expired'
-        updatePurchaseStatus(paymentId, "Expired");
-      }
-
-      return data.status; // Trả về trạng thái giao dịch
+      return data.status;
     } catch (error) {
       console.error("Lỗi kiểm tra trạng thái giao dịch:", error);
       return null;
     }
   };
 
-  // Cập nhật trạng thái giao dịch
-  const updatePurchaseStatus = (paymentId, status) => {
-    setPurchases((prevPurchases) =>
-      prevPurchases.map((purchase) =>
-        purchase.id === paymentId ? { ...purchase, status } : purchase
-      )
-    );
+  // Hàm lọc và tìm kiếm
+  const applyFiltersAndSearch = useCallback(() => {
+    let result = purchases;
+
+    // Lọc theo trạng thái
+    if (statusFilter !== 'Tất cả') {
+      result = result.filter(purchase => purchase.status === statusFilter);
+    }
+
+    // Tìm kiếm
+    if (searchTerm) {
+      result = result.filter(purchase =>
+        purchase.sku.item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        purchase.sku.item.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredPurchases(result);
+    setCurrentPage(1);
+  }, [purchases, statusFilter, searchTerm]);
+
+  // Hàm xem chi tiết đơn hàng
+  const handleViewDetails = (purchase) => {
+    setSelectedPurchase(purchase);
+    setShowModal(true);
   };
 
+  // Hàm đóng modal chi tiết
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedPurchase(null);
+  };
+
+  // Hàm xem ảnh phóng to
+  const handleImageClick = (imageUrl) => {
+    setImageToShow(imageUrl);
+  };
+
+  // Tính toán phân trang
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredPurchases.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Thay đổi trang
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Tính toán tổng số trang
+  const totalPages = Math.ceil(filteredPurchases.length / itemsPerPage);
+
+  // Hàm tạo nút phân trang
+  const renderPaginationItems = () => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    // Điều chỉnh lại startPage nếu endPage đã ở cuối
+    if (endPage === totalPages) {
+      startPage = Math.max(1, totalPages - maxPagesToShow + 1);
+    }
+
+    // Nút trang đầu
+    if (startPage > 1) {
+      pageNumbers.push(
+        <Pagination.First key="first" onClick={() => paginate(1)} />,
+        <Pagination.Ellipsis key="ellipsis-start" />
+      );
+    }
+
+    // Các nút trang
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(
+        <Pagination.Item
+          key={i}
+          active={i === currentPage}
+          onClick={() => paginate(i)}
+        >
+          {i}
+        </Pagination.Item>
+      );
+    }
+
+    // Nút trang cuối
+    if (endPage < totalPages) {
+      pageNumbers.push(
+        <Pagination.Ellipsis key="ellipsis-end" />,
+        <Pagination.Last key="last" onClick={() => paginate(totalPages)} />
+      );
+    }
+
+    return pageNumbers;
+  };
+
+  // Hiệu ứng phụ để áp dụng bộ lọc và tìm kiếm
+  useEffect(() => {
+    applyFiltersAndSearch();
+  }, [applyFiltersAndSearch]);
+
+  // Hiệu ứng phụ để tải dữ liệu
   useEffect(() => {
     if (referenceId) {
-      fetchPurchaseHistory(); // Lấy dữ liệu ban đầu
+      fetchPurchaseHistory();
     }
-  }, [referenceId]);
+  }, [referenceId, fetchPurchaseHistory]);
 
+  // Xử lý trạng thái tải
   if (loading) {
     return <div>Đang tải dữ liệu...</div>;
   }
 
+  // Xử lý lỗi
   if (error) {
     return <div className="alert alert-danger">{error}</div>;
   }
 
   return (
     <div className="card">
-      <div className="card-header">
+      <div className="card-header d-flex justify-content-between align-items-center">
         <h5>Lịch Sử Mua Hàng</h5>
+        <div className="d-flex align-items-center">
+          <InputGroup className="me-2" style={{ width: '200px' }}>
+            <Form.Control
+              type="text"
+              placeholder="Tìm kiếm sản phẩm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </InputGroup>
+          <Form.Select
+            className="me-2"
+            style={{ width: '150px' }}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="Tất cả">Tất cả trạng thái</option>
+            <option value="Confirmed">Đã xác nhận</option>
+            <option value="Pending">Đang chờ</option>
+            <option value="Expired">Hết hạn</option>
+          </Form.Select>
+
+          {/* Lựa chọn số lượng item trên trang */}
+          <Form.Select
+            style={{ width: '100px' }}
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+          >
+            <option value={5}>5 items</option>
+            <option value={10}>10 items</option>
+            <option value={20}>20 items</option>
+            <option value={50}>50 items</option>
+          </Form.Select>
+        </div>
       </div>
+
       <div className="card-body">
         <table className="table">
           <thead>
@@ -134,9 +265,9 @@ const PurchaseHistory = ({ referenceId }) => {
             </tr>
           </thead>
           <tbody>
-            {purchases.map((purchase, index) => (
+            {currentItems.map((purchase, index) => (
               <tr key={purchase.id}>
-                <td>{index + 1}</td>
+                <td>{indexOfFirstItem + index + 1}</td>
                 <td>
                   <img
                     src={purchase.sku.item.imageUrl}
@@ -158,13 +289,14 @@ const PurchaseHistory = ({ referenceId }) => {
                 </td>
                 <td>
                   <span
-                    className={`badge ${
-                      purchase.status === "Confirmed"
-                        ? "bg-success"
-                        : purchase.status === "Pending"
+                    className={`badge ${purchase.status === "Confirmed"
+                      ? "bg-success"
+                      : purchase.status === "Pending"
                         ? "bg-warning"
-                        : "bg-secondary"
-                    }`}
+                        : purchase.status === "Expired"
+                          ? "bg-danger"
+                          : "bg-secondary"
+                      }`}
                   >
                     {purchase.status}
                   </span>
@@ -181,8 +313,32 @@ const PurchaseHistory = ({ referenceId }) => {
             ))}
           </tbody>
         </table>
+
+        {filteredPurchases.length === 0 && (
+          <div className="text-center text-muted">
+            Không có giao dịch nào phù hợp
+          </div>
+        )}
+
+        {/* Phân trang nâng cao */}
+        {filteredPurchases.length > 0 && (
+          <div className="d-flex justify-content-between align-items-center mt-3">
+            <div className="text-muted">
+              Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredPurchases.length)}
+              {' '}trong tổng số{' '}
+              {filteredPurchases.length} giao dịch
+            </div>
+
+            <div className="d-flex align-items-center">
+              <Pagination className="mb-0 me-3">
+                {renderPaginationItems()}
+              </Pagination>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Modal chi tiết đơn hàng */}
       {selectedPurchase && (
         <Modal show={showModal} onHide={handleCloseModal} centered>
           <Modal.Header closeButton>
@@ -212,13 +368,14 @@ const PurchaseHistory = ({ referenceId }) => {
             <p>
               <strong>Trạng thái:</strong>{" "}
               <span
-                className={`badge ${
-                  selectedPurchase.status === "Confirmed"
-                    ? "bg-success"
-                    : selectedPurchase.status === "Pending"
+                className={`badge ${selectedPurchase.status === "Confirmed"
+                  ? "bg-success"
+                  : selectedPurchase.status === "Pending"
                     ? "bg-warning"
-                    : "bg-secondary"
-                }`}
+                    : selectedPurchase.status === "Expired"
+                      ? "bg-danger"
+                      : "bg-secondary"
+                  }`}
               >
                 {selectedPurchase.status}
               </span>
