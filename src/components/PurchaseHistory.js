@@ -67,8 +67,20 @@ const PurchaseHistory = ({ referenceId }) => {
     }
   }, [referenceId]);
 
-  // Hàm kiểm tra trạng thái giao dịch
+  const transactionStatusCache = {};
+  const TRANSACTION_STATUS_CACHE_TIME = 2 * 60 * 1000; // 2 phút
+
   const checkTransactionStatus = async (paymentId) => {
+    const currentTime = Date.now();
+
+    // Kiểm tra cache trước
+    if (
+      transactionStatusCache[paymentId] &&
+      (currentTime - transactionStatusCache[paymentId].timestamp) < TRANSACTION_STATUS_CACHE_TIME
+    ) {
+      return transactionStatusCache[paymentId].status;
+    }
+
     try {
       const response = await fetch(
         `https://api.gameshift.dev/nx/payments/${paymentId}`,
@@ -86,6 +98,13 @@ const PurchaseHistory = ({ referenceId }) => {
       }
 
       const data = await response.json();
+
+      // Lưu vào cache
+      transactionStatusCache[paymentId] = {
+        status: data.status,
+        timestamp: currentTime
+      };
+
       return data.status;
     } catch (error) {
       console.error("Lỗi kiểm tra trạng thái giao dịch:", error);
