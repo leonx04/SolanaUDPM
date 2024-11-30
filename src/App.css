@@ -368,7 +368,7 @@
     padding: 0.5rem 1rem;
   }
 
-  .top-nav > .d-flex {
+  .top-nav>.d-flex {
     flex-direction: row;
     align-items: center;
     width: 100%;
@@ -390,7 +390,7 @@
     margin-right: 1rem;
   }
 
-  .top-nav .wallet-connection-container > * {
+  .top-nav .wallet-connection-container>* {
     width: 100%;
   }
 
@@ -398,6 +398,7 @@
     width: 100%;
   }
 }
+
 /* Giữ nguyên các CSS hiện tại và thêm đoạn sau vào cuối file */
 
 /* Theme Variables */
@@ -840,12 +841,38 @@
 }
 
 .zoomed-image:hover {
-  transform: scale(1.1); /* Phóng to khi hover */
+  transform: scale(1.1);
+  /* Phóng to khi hover */
 }
 
 
 /* Hiệu ứng hover cho dòng khi di chuột vào */
 .table tbody tr:hover {
-  background-color: #f1f1f1; /* Thay đổi màu nền khi hover vào dòng */
-  cursor: pointer; /* Thêm con trỏ "pointer" để hiển thị như một liên kết */
+  background-color: #f1f1f1;
+  /* Thay đổi màu nền khi hover vào dòng */
+  cursor: pointer;
+  /* Thêm con trỏ "pointer" để hiển thị như một liên kết */
+}
+
+.table-container {
+  overflow-x: auto; /* Bật cuộn ngang khi nội dung vượt quá chiều rộng */
+  -webkit-overflow-scrolling: touch; /* Tăng trải nghiệm cuộn mượt trên thiết bị cảm ứng */
+}
+
+.table {
+  width: 100%; /* Bảng chiếm toàn bộ chiều rộng của container */
+  max-width: 100%; /* Giới hạn chiều rộng tối đa */
+  border-collapse: collapse; /* Loại bỏ khoảng cách giữa các ô */
+}
+
+.table th,
+.table td {
+  text-align: left; /* Canh trái nội dung */
+  padding: 0.75rem; /* Khoảng cách trong ô */
+  border: 1px solid #dee2e6; /* Đường viền */
+}
+
+.table th {
+  background-color: #f8f9fa; /* Màu nền tiêu đề */
+  font-weight: bold; /* In đậm tiêu đề */
 }

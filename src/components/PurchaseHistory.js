@@ -209,59 +209,108 @@ const PurchaseHistory = ({ referenceId }) => {
   }
 
   return (
-    <div className="card">
-      <div className="card-header d-flex justify-content-between align-items-center">
-        <h5>Lịch Sử Mua Hàng</h5>
-        <div className="d-flex align-items-center">
-          <InputGroup className="me-2" style={{ width: '200px' }}>
-            <Form.Control
-              type="text"
-              placeholder="Tìm kiếm sản phẩm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </InputGroup>
-          <Form.Select
-            className="me-2"
-            style={{ width: '150px' }}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="Tất cả">Tất cả trạng thái</option>
-            <option value="Confirmed">Đã xác nhận</option>
-            <option value="Pending">Đang chờ</option>
-            <option value="Expired">Hết hạn</option>
-          </Form.Select>
+    <div className="card" style={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
+      <div
+        className="card-header"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: '10px',
+          padding: '15px'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h5 style={{ margin: 0 }}>Lịch Sử Mua Hàng</h5>
+        </div>
 
-          {/* Lựa chọn số lượng item trên trang */}
-          <Form.Select
-            style={{ width: '100px' }}
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '10px',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '10px',
+              flex: 1,
+              minWidth: '250px'
             }}
           >
-            <option value={5}>5 items</option>
-            <option value={10}>10 items</option>
-            <option value={20}>20 items</option>
-            <option value={50}>50 items</option>
-          </Form.Select>
+            <InputGroup style={{ flex: 1, minWidth: '200px' }}>
+              <Form.Control
+                type="text"
+                placeholder="Tìm kiếm sản phẩm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ height: '38px' }}
+              />
+            </InputGroup>
+
+            <Form.Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                width: '150px',
+                height: '38px',
+                minWidth: '120px'
+              }}
+            >
+              <option value="Tất cả">Tất cả</option>
+              <option value="Confirmed">Đã xác nhận</option>
+              <option value="Pending">Đang chờ</option>
+              <option value="Expired">Hết hạn</option>
+              <option value="Completed">Hoàn thành</option>
+            </Form.Select>
+
+            <Form.Select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              style={{
+                width: '100px',
+                height: '38px',
+                minWidth: '80px'
+              }}
+            >
+              <option value={5}>5 items</option>
+              <option value={10}>10 items</option>
+              <option value={20}>20 items</option>
+              <option value={50}>50 items</option>
+            </Form.Select>
+          </div>
         </div>
       </div>
 
-      <div className="card-body">
-        <table className="table">
+      <div
+        className="card-body"
+        style={{
+          padding: '15px',
+          overflowX: 'auto',
+          width: '100%'
+        }}
+      >
+        <table
+          className="table table-responsive table-hover"
+          style={{ minWidth: '800px', width: '100%' }}
+        >
           <thead>
             <tr>
-              <th>#</th>
-              <th>Ảnh</th>
-              <th>Sản phẩm</th>
-              <th>Mô tả</th>
-              <th>Giá</th>
-              <th>Ngày tạo</th>
-              <th>Trạng thái</th>
-              <th>Hành động</th>
+              <th style={{ width: '5%' }}>#</th>
+              <th style={{ width: '10%' }}>Ảnh</th>
+              <th style={{ width: '15%' }}>Sản phẩm</th>
+              <th style={{ width: '20%' }}>Mô tả</th>
+              <th style={{ width: '10%' }}>Giá</th>
+              <th style={{ width: '10%' }}>Ngày tạo</th>
+              <th style={{ width: '10%' }}>Trạng thái</th>
+              <th style={{ width: '10%' }}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -277,6 +326,7 @@ const PurchaseHistory = ({ referenceId }) => {
                       height: "50px",
                       objectFit: "cover",
                       cursor: "pointer",
+                      borderRadius: '4px'
                     }}
                     onClick={() => handleImageClick(purchase.sku.item.imageUrl)}
                   />
@@ -297,6 +347,7 @@ const PurchaseHistory = ({ referenceId }) => {
                           ? "bg-danger"
                           : "bg-secondary"
                       }`}
+                    style={{ fontSize: '0.8em' }}
                   >
                     {purchase.status}
                   </span>
@@ -315,22 +366,32 @@ const PurchaseHistory = ({ referenceId }) => {
         </table>
 
         {filteredPurchases.length === 0 && (
-          <div className="text-center text-muted">
+          <div
+            className="text-center text-muted"
+            style={{ padding: '20px' }}
+          >
             Không có giao dịch nào phù hợp
           </div>
         )}
 
-        {/* Phân trang nâng cao */}
         {filteredPurchases.length > 0 && (
-          <div className="d-flex justify-content-between align-items-center mt-3">
-            <div className="text-muted">
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '15px'
+            }}
+          >
+            <div className="text-muted" style={{ minWidth: '200px' }}>
               Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredPurchases.length)}
               {' '}trong tổng số{' '}
               {filteredPurchases.length} giao dịch
             </div>
 
-            <div className="d-flex align-items-center">
-              <Pagination className="mb-0 me-3">
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Pagination style={{ margin: 0 }}>
                 {renderPaginationItems()}
               </Pagination>
             </div>
