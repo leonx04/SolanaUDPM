@@ -328,6 +328,17 @@ const PurchaseHistory = ({ referenceId }) => {
               <option value={20}>20 items</option>
               <option value={50}>50 items</option>
             </Form.Select>
+            <Button
+              className="btn btn-primary btn-sm"
+              onClick={fetchPurchaseHistory}
+              style={{
+                height: '38px',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              <i className="bi bi-arrow-clockwise"></i>
+            </Button>
           </div>
         </div>
       </div>
@@ -464,8 +475,8 @@ const PurchaseHistory = ({ referenceId }) => {
                 src={selectedPurchase.sku.item.imageUrl}
                 alt={selectedPurchase.sku.item.name}
                 style={{
-                  width: "100px",
-                  height: "100px",
+                  width: "400px",
+                  height: "400px",
                   objectFit: "cover",
                   borderRadius: "8px",
                   marginBottom: "15px",

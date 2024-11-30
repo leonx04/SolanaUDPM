@@ -389,7 +389,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                             onClick={fetchItems}
                             className="btn btn-primary btn-sm"
                         >
-                            <i className="fas fa-sync-alt me-1"></i> Làm mới
+                            <i className="bi bi-arrow-clockwise"></i>
                         </button>
                     </div>
                 </div>
