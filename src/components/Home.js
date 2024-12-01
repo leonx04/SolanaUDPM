@@ -404,7 +404,7 @@ const MarketplaceHome = ({ referenceId }) => {
         <Button variant="primary" size="lg" className="rounded-pill px-4 py-2" onClick={scrollToProducts}>Khám phá ngay</Button>
       </header>
 
-      <div className="container mb-5">
+      <div className="carousel container mb-5 ">
         <Carousel className="rounded-lg overflow-hidden shadow-lg">
           <Carousel.Item>
             <img

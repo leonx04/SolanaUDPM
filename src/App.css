@@ -1089,3 +1089,37 @@
 .badge-success{
   background-color: rgba(6, 110, 14, 0.6);
 }
+.carousel img {
+  height: 400px; /* Chiều cao cố định */
+  object-fit: cover; /* Đảm bảo hình ảnh không bị méo */
+  border-radius: 15px; /* Bo tròn mềm mại */
+}
+
+.carousel .carousel-item {
+  text-align: center; /* Căn giữa nội dung bên trong */
+}
+
+.carousel .carousel-caption {
+  background: rgba(0, 0, 0, 0.5); /* Nền mờ đen cho caption */
+  color: #fff; /* Màu chữ trắng */
+  padding: 10px;
+  border-radius: 10px; /* Bo góc caption */
+  max-width: 80%; /* Giới hạn chiều rộng caption */
+  margin: auto; /* Căn giữa caption */
+}
+
+.carousel {
+  max-width: 1000px; /* Giới hạn chiều rộng của carousel */
+  margin: auto; /* Căn giữa carousel */
+}
+.carousel img {
+  height: 400px; /* Chiều cao cố định */
+  object-fit: cover; /* Đảm bảo hình ảnh không bị méo */
+  border-radius: 15px; /* Bo tròn mềm mại */
+  transition: border-radius 0.3s ease; /* Tăng hiệu ứng mượt */
+}
+
+.carousel .carousel-item {
+  overflow: hidden; /* Đảm bảo vùng hiển thị ảnh bị cắt gọn */
+  border-radius: 15px; /* Đảm bảo phần tử bao quanh cũng bo góc */
+}
