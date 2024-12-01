@@ -1,8 +1,7 @@
 import axios from 'axios';
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Alert, Button, Card, Carousel, Form, Modal, Spinner, InputGroup } from 'react-bootstrap';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { Alert, Button, Card, Carousel, Form, InputGroup, Modal, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
-
 // Pagination component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
@@ -102,55 +101,103 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   );
 };
 
+// Action types for reducer
+const ACTIONS = {
+  FETCH_START: 'FETCH_START',
+  FETCH_SUCCESS: 'FETCH_SUCCESS',
+  FETCH_ERROR: 'FETCH_ERROR',
+  UPDATE_FILTERS: 'UPDATE_FILTERS',
+  SET_SELECTED_ITEM: 'SET_SELECTED_ITEM',
+  CLEAR_SELECTED_ITEM: 'CLEAR_SELECTED_ITEM',
+  SET_BUY_LOADING: 'SET_BUY_LOADING',
+  SET_BUY_ERROR: 'SET_BUY_ERROR',
+};
+
+// Reducer function
+const reducer = (state, action) => {
+  switch (action.type) {
+    case ACTIONS.FETCH_START:
+      return { ...state, loading: true, error: null };
+    case ACTIONS.FETCH_SUCCESS:
+      return { ...state, loading: false, allItems: action.payload, lastFetchTime: Date.now() };
+    case ACTIONS.FETCH_ERROR:
+      return { ...state, loading: false, error: action.payload };
+    case ACTIONS.UPDATE_FILTERS:
+      return { ...state, ...action.payload };
+    case ACTIONS.SET_SELECTED_ITEM:
+      return { ...state, selectedItem: action.payload };
+    case ACTIONS.CLEAR_SELECTED_ITEM:
+      return { ...state, selectedItem: null };
+    case ACTIONS.SET_BUY_LOADING:
+      return { ...state, buyLoading: action.payload };
+    case ACTIONS.SET_BUY_ERROR:
+      return { ...state, buyError: action.payload };
+    default:
+      return state;
+  }
+};
+
 // Main MarketplaceHome component
 const MarketplaceHome = ({ referenceId }) => {
-  const [allItems, setAllItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [buyLoading, setBuyLoading] = useState(false);
-  const [buyError, setBuyError] = useState(null);
-  const [lastFetchTime, setLastFetchTime] = useState(Date.now());
+  const [state, dispatch] = useReducer(reducer, {
+    allItems: [],
+    loading: true,
+    error: null,
+    selectedItem: null,
+    buyLoading: false,
+    buyError: null,
+    lastFetchTime: Date.now(),
+    sortOrder: 'default',
+    priceRange: { min: '', max: '' },
+    searchQuery: '',
+    currentPage: 1,
+    itemsPerPage: 10,
+  });
 
-  // New state for filtering and sorting
-  const [sortOrder, setSortOrder] = useState('default');
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [searchQuery, setSearchQuery] = useState('');
   const productSectionRef = useRef(null);
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const allProductsSectionRef = useRef(null);
 
   const filteredItems = useMemo(() => {
-    return allItems.filter(itemData =>
+    return state.allItems.filter(itemData =>
       itemData.type === 'UniqueAsset' &&
       itemData.item.priceCents !== null &&
       itemData.item.owner.referenceId !== referenceId &&
-      itemData.item.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      (priceRange.min === '' || itemData.item.priceCents >= priceRange.min * 100) &&
-      (priceRange.max === '' || itemData.item.priceCents <= priceRange.max * 100)
+      itemData.item.name.toLowerCase().includes(state.searchQuery.toLowerCase()) &&
+      (state.priceRange.min === '' || itemData.item.priceCents >= state.priceRange.min * 100) &&
+      (state.priceRange.max === '' || itemData.item.priceCents <= state.priceRange.max * 100)
     ).sort((a, b) => {
-      if (sortOrder === 'highToLow') {
+      if (state.sortOrder === 'highToLow') {
         return b.item.priceCents - a.item.priceCents;
-      } else if (sortOrder === 'lowToHigh') {
+      } else if (state.sortOrder === 'lowToHigh') {
         return a.item.priceCents - b.item.priceCents;
       }
       return 0;
     });
-  }, [allItems, referenceId, searchQuery, priceRange, sortOrder]);
+  }, [state.allItems, referenceId, state.searchQuery, state.priceRange, state.sortOrder]);
+
+  const featuredItems = useMemo(() => {
+    const sortedItems = [...state.allItems].sort((a, b) => {
+      // Sort by price (lowest first)
+      const priceDiff = a.item.priceCents - b.item.priceCents;
+      if (priceDiff !== 0) return priceDiff;
+      
+      // If prices are equal, sort by date (newest first)
+      return new Date(b.item.createdAt) - new Date(a.item.createdAt);
+    });
+    
+    return sortedItems.slice(0, 3);
+  }, [state.allItems]);
 
   const paginatedItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
+    const startIndex = (state.currentPage - 1) * state.itemsPerPage;
+    const endIndex = startIndex + state.itemsPerPage;
     return filteredItems.slice(startIndex, endIndex);
-  }, [filteredItems, currentPage, itemsPerPage]);
+  }, [filteredItems, state.currentPage, state.itemsPerPage]);
 
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredItems.length / state.itemsPerPage);
 
   const fetchAllItems = useCallback(async (signal) => {
-    setLoading(true);
-    setError(null);
+    dispatch({ type: ACTIONS.FETCH_START });
 
     try {
       const fetchPage = async (page) => {
@@ -180,39 +227,30 @@ const MarketplaceHome = ({ referenceId }) => {
         page++;
       }
 
-      const hasChanged = JSON.stringify(allFetchedItems) !== JSON.stringify(allItems);
-
-      if (hasChanged) {
-        setAllItems(allFetchedItems);
-        setLastFetchTime(Date.now());
-      }
+      dispatch({ type: ACTIONS.FETCH_SUCCESS, payload: allFetchedItems });
     } catch (err) {
       if (axios.isCancel(err)) {
         console.log('Request canceled', err.message);
       } else {
-        setError('Không thể tải danh sách sản phẩm: ' + err.message);
+        dispatch({ type: ACTIONS.FETCH_ERROR, payload: 'Không thể tải danh sách sản phẩm: ' + err.message });
         console.error('Fetch error:', err);
       }
-    } finally {
-      setLoading(false);
     }
-  }, [allItems]);
+  }, []);
 
-  const handleManualRefresh = () => {
-    fetchAllItems();
-    setSearchQuery('');
-    setSortOrder('default');
-    setPriceRange({ min: '', max: '' });
-    setCurrentPage(1);
-  };
+  const handlePeriodicRefresh = useCallback(async () => {
+    const controller = new AbortController();
+    await fetchAllItems(controller.signal);
+    return () => controller.abort();
+  }, [fetchAllItems]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      fetchAllItems();
+      handlePeriodicRefresh();
     }, 30000);
 
     return () => clearInterval(intervalId);
-  }, [fetchAllItems]);
+  }, [handlePeriodicRefresh]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -220,14 +258,27 @@ const MarketplaceHome = ({ referenceId }) => {
     return () => controller.abort();
   }, [fetchAllItems]);
 
-  const handleBuyItem = async (itemData) => {
-    setSelectedItem(itemData.item);
-    setBuyError(null);
+  const handleManualRefresh = async () => {
+    await fetchAllItems();
+    dispatch({ 
+      type: ACTIONS.UPDATE_FILTERS, 
+      payload: { 
+        searchQuery: '', 
+        sortOrder: 'default', 
+        priceRange: { min: '', max: '' }, 
+        currentPage: 1 
+      } 
+    });
+  };
+
+  const handleBuyItem = (itemData) => {
+    dispatch({ type: ACTIONS.SET_SELECTED_ITEM, payload: itemData.item });
+    dispatch({ type: ACTIONS.SET_BUY_ERROR, payload: null });
   };
 
   const buyItemWithPhantomWallet = async () => {
-    setBuyLoading(true);
-    setBuyError(null);
+    dispatch({ type: ACTIONS.SET_BUY_LOADING, payload: true });
+    dispatch({ type: ACTIONS.SET_BUY_ERROR, payload: null });
 
     try {
       const provider = window.phantom?.solana;
@@ -236,7 +287,7 @@ const MarketplaceHome = ({ referenceId }) => {
       }
 
       const response = await axios.post(
-        `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/buy`,
+        `https://api.gameshift.dev/nx/unique-assets/${state.selectedItem.id}/buy`,
         {
           buyerId: referenceId
         },
@@ -259,9 +310,9 @@ const MarketplaceHome = ({ referenceId }) => {
         err.message ||
         'Không thể thực hiện giao dịch. Vui lòng thử lại.';
 
-      setBuyError(errorMessage);
+      dispatch({ type: ACTIONS.SET_BUY_ERROR, payload: errorMessage });
     } finally {
-      setBuyLoading(false);
+      dispatch({ type: ACTIONS.SET_BUY_LOADING, payload: false });
     }
   };
 
@@ -269,42 +320,78 @@ const MarketplaceHome = ({ referenceId }) => {
     productSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (loading) {
+  const scrollToAllProducts = () => {
+    allProductsSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const renderProductGrid = (items) => {
+    if (state.loading) {
+      return (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" />
+          <p className="mt-3">Đang tải dữ liệu...</p>
+        </div>
+      );
+    }
+
+    if (items.length === 0) {
+      return (
+        <div className="text-center py-5">
+          <i className="bi bi-inbox-fill text-muted" style={{ fontSize: '4rem' }}></i>
+          <h2 className="text-muted mt-3">Không có sản phẩm nào</h2>
+          <p className="text-muted">Hiện tại chưa có sản phẩm nào để hiển thị.</p>
+          <Button
+            variant="outline-primary"
+            onClick={handleManualRefresh}
+            className="mt-3"
+          >
+            <i className="bi bi-arrow-clockwise me-2"></i>
+            Tải lại
+          </Button>
+        </div>
+      );
+    }
+
     return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <Spinner animation="border" variant="primary" />
+      <div className="row row-cols-1 row-cols-md-3 g-4 mb-4">
+        {items.map((itemData) => {
+          const item = itemData.item;
+          return (
+            <div key={item.id} className="col">
+              <Card className="h-100 shadow-sm hover-lift">
+                <Card.Img
+                  variant="top"
+                  src={item.imageUrl || '/default-image.jpg'}
+                  alt={item.name}
+                  className="card-img-top object-fit-cover"
+                  style={{ height: '200px' }}
+                />
+                <Card.Body className="d-flex flex-column">
+                  <Card.Title className="fw-bold mb-2">{item.name}</Card.Title>
+                  <Card.Text className="text-muted small mb-3">
+                    Tác giả: {item.owner.referenceId}
+                  </Card.Text>
+                  <div className="mt-auto d-flex justify-content-between align-items-center">
+                    <span className="badge bg-primary rounded-pill px-3 py-2">
+                      {`$${(item.priceCents / 100).toFixed(2)} USDC`}
+                    </span>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => handleBuyItem(itemData)}
+                      className="rounded-pill"
+                    >
+                      Mua ngay
+                    </Button>
+                  </div>
+                </Card.Body>
+              </Card>
+            </div>
+          );
+        })}
       </div>
     );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="danger" className="text-center">
-        {error}
-        <Button
-          variant="outline-primary"
-          className="ms-3"
-          onClick={() => fetchAllItems()}
-        >
-          Thử lại
-        </Button>
-      </Alert>
-    );
-  }
-
-  if (filteredItems.length === 0) {
-    return (
-      <div className="container text-center py-5">
-        <h2 className="text-muted">Hiện tại chưa có sản phẩm nào để mua</h2>
-        <Button
-          variant="primary"
-          onClick={() => fetchAllItems()}
-        >
-          Tải lại
-        </Button>
-      </div>
-    );
-  }
+  };
 
   return (
     <div className="marketplace-home">
@@ -341,204 +428,13 @@ const MarketplaceHome = ({ referenceId }) => {
         </Carousel>
       </div>
 
-      <div className="container" ref={productSectionRef}>
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="mb-0">Sản phẩm nổi bật</h2>
-          <div className="d-flex align-items-center">
-            <small className="text-muted me-3">
-              Cập nhật lần cuối: {new Date(lastFetchTime).toLocaleString()}
-            </small>
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={handleManualRefresh}
-              className="rounded-circle"
-            >
-              <i className="bi bi-arrow-clockwise"></i>
-            </Button>
-          </div>
-        </div>
-
-        <Form className="mb-4">
-          <div className="row g-3">
-            <div className="col-md-4">
-              <InputGroup>
-                <InputGroup.Text><i className="bi bi-search"></i></InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder="Tìm kiếm sản phẩm..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </InputGroup>
-            </div>
-            <div className="col-md-3">
-              <Form.Select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-              >
-                <option value="default">Sắp xếp mặc định</option>
-                <option value="lowToHigh">Giá: Thấp đến Cao</option>
-                <option value="highToLow">Giá: Cao đến Thấp</option>
-              </Form.Select>
-            </div>
-            <div className="col-md-5">
-              <InputGroup>
-                <InputGroup.Text>Khoảng giá</InputGroup.Text>
-                <Form.Control
-                  type="number"
-                  placeholder="Từ"
-                  value={priceRange.min}
-                  onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                />
-                <InputGroup.Text>-</InputGroup.Text>
-                <Form.Control
-                  type="number"
-                  placeholder="Đến"
-                  value={priceRange.max}
-                  onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                />
-              </InputGroup>
-            </div>
-          </div>
-        </Form>
-
-        <div className="row row-cols-1 row-cols-md-3 g-4 mb-4">
-          {paginatedItems.map((itemData) => {
-            const item = itemData.item;
-            return (
-              <div key={item.id} className="col">
-                <Card className="h-100 shadow-sm hover-lift">
-                  <Card.Img
-                    variant="top"
-                    src={item.imageUrl || '/default-image.jpg'}
-                    alt={item.name}
-                    className="card-img-top object-fit-cover"
-                    style={{ height: '200px' }}
-                  />
-                  <Card.Body className="d-flex flex-column">
-                    <Card.Title className="fw-bold mb-2">{item.name}</Card.Title>
-                    <Card.Text className="text-muted small mb-3">
-                      Tác giả: {item.owner.referenceId}
-                    </Card.Text>
-                    <div className="mt-auto d-flex justify-content-between align-items-center">
-                      <span className="badge bg-primary rounded-pill px-3 py-2">
-                        {`$${(item.priceCents / 100).toFixed(2)} USDC`}
-                      </span>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => handleBuyItem(itemData)}
-                        className="rounded-pill"
-                      >
-                        Mua ngay
-                      </Button>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            Hiển thị: {paginatedItems.length} / {filteredItems.length} sản phẩm
-          </div>
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-          <Form.Select
-            size="sm"
-            value={itemsPerPage}
-            onChange={(e) => setItemsPerPage(Number(e.target.value))}
-            className="w-auto"
-          >
-            {[5, 10, 20, 50].map((num) => (
-              <option key={num} value={num}>
-                {num} sản phẩm/trang
-              </option>
-            ))}
-          </Form.Select>
+      <div className="container mb-5" ref={productSectionRef}>
+        <h2 className="text-center fw-bold mb-4">Sản phẩm nổi bật</h2>
+        {renderProductGrid(featuredItems)}
+        <div className="text-center mt-4">
+          <Button variant="outline-primary" onClick={scrollToAllProducts}>Xem tất cả sản phẩm</Button>
         </div>
       </div>
-
-      {selectedItem && (
-        <Modal show={!!selectedItem} onHide={() => setSelectedItem(null)} size="lg" centered>
-          <Modal.Header closeButton>
-            <Modal.Title>Xác nhận mua {selectedItem.name}</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <div className="row">
-              <div className="col-md-6">
-                <img
-                  src={selectedItem.imageUrl}
-                  alt={selectedItem.name}
-                  className="img-fluid rounded shadow-sm mb-3"
-                />
-              </div>
-              <div className="col-md-6">
-                <h5 className="mb-3">Chi tiết sản phẩm</h5>
-                <Card className="mb-3">
-                  <Card.Body>
-                    <p><strong>Tên:</strong> {selectedItem.name}</p>
-                    <p><strong>Mô tả:</strong> {selectedItem.description || 'Không có mô tả'}</p>
-                    <p><strong>Giá:</strong> ${(selectedItem.priceCents / 100).toFixed(2)} USDC</p>
-                  </Card.Body>
-                </Card>
-
-                {selectedItem.attributes && selectedItem.attributes.length > 0 && (
-                  <Card>
-                    <Card.Header>Thuộc tính</Card.Header>
-                    <Card.Body>
-                      {selectedItem.attributes.map((attr, index) => (
-                        <div key={index} className="d-flex justify-content-between mb-2">
-                          <span className="text-muted">{attr.traitType}</span>
-                          <span className="badge bg-secondary">{attr.value}</span>
-                        </div>
-                      ))}
-                    </Card.Body>
-                  </Card>
-                )}
-
-                {buyError && (
-                  <Alert variant="danger" className="mt-3">
-                    {buyError}
-                  </Alert>
-                )}
-              </div>
-            </div>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setSelectedItem(null)}>
-              Hủy
-            </Button>
-            <Button
-              variant="primary"
-              onClick={buyItemWithPhantomWallet}
-              disabled={buyLoading}
-            >
-              {buyLoading ? (
-                <>
-                  <Spinner
-                    as="span"
-                    animation="border"
-                    size="sm"
-                    role="status"
-                    aria-hidden="true"
-                    className="me-2"
-                  />
-                  Đang xử lý...
-                </>
-              ) : (
-                'Xác nhận mua'
-              )}
-            </Button>
-          </Modal.Footer>
-        </Modal>
-      )}
 
       <section className="roadmap-section py-5 bg-light">
         <div className="container">
@@ -563,9 +459,172 @@ const MarketplaceHome = ({ referenceId }) => {
           </div>
         </div>
       </section>
+
+      <div className="container mt-5" ref={allProductsSectionRef}>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h2 className="mb-0">Tất cả sản phẩm</h2>
+          <div className="d-flex align-items-center">
+            <small className="text-muted me-3">
+              Cập nhật lần cuối: {new Date(state.lastFetchTime).toLocaleString()}
+            </small>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={handleManualRefresh}
+              className="rounded-circle"
+              disabled={state.loading}
+            >
+              <i className={`bi ${state.loading ? 'bi-hourglass-split' : 'bi-arrow-clockwise'}`}></i>
+            </Button>
+          </div>
+        </div>
+
+        <Form className="mb-4">
+          <div className="row g-3">
+            <div className="col-md-4">
+              <InputGroup>
+                <InputGroup.Text><i className="bi bi-search"></i></InputGroup.Text>
+                <Form.Control
+                  type="text"
+                  placeholder="Tìm kiếm sản phẩm..."
+                  value={state.searchQuery}
+                  onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { searchQuery: e.target.value } })}
+                />
+              </InputGroup>
+            </div>
+            <div className="col-md-3">
+              <Form.Select
+                value={state.sortOrder}
+                onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { sortOrder: e.target.value } })}
+              >
+                <option value="default">Sắp xếp mặc định</option>
+                <option value="lowToHigh">Giá: Thấp đến Cao</option>
+                <option value="highToLow">Giá: Cao đến Thấp</option>
+              </Form.Select>
+            </div>
+            <div className="col-md-5">
+              <InputGroup>
+                <InputGroup.Text>Khoảng giá</InputGroup.Text>
+                <Form.Control
+                  type="number"
+                  placeholder="Từ"
+                  value={state.priceRange.min}
+                  onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { priceRange: { ...state.priceRange, min: e.target.value } } })}
+                />
+                <InputGroup.Text>-</InputGroup.Text>
+                <Form.Control
+                  type="number"
+                  placeholder="Đến"
+                  value={state.priceRange.max}
+                  onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { priceRange: { ...state.priceRange, max: e.target.value } } })}
+                />
+              </InputGroup>
+            </div>
+          </div>
+        </Form>
+
+        {renderProductGrid(paginatedItems)}
+
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            Hiển thị: {paginatedItems.length} / {filteredItems.length} sản phẩm
+          </div>
+          <Pagination
+            currentPage={state.currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { currentPage: page } })}
+          />
+          <Form.Select
+            size="sm"
+            value={state.itemsPerPage}
+            onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { itemsPerPage: Number(e.target.value) } })}
+            className="w-auto"
+          >
+            {[5, 10, 20, 50].map((num) => (
+              <option key={num} value={num}>
+                {num} sản phẩm/trang
+              </option>
+            ))}
+          </Form.Select>
+        </div>
+      </div>
+
+      {state.selectedItem && (
+        <Modal show={!!state.selectedItem} onHide={() => dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM })} size="lg" centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Xác nhận mua {state.selectedItem.name}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className="row">
+              <div className="col-md-6">
+                <img
+                  src={state.selectedItem.imageUrl}
+                  alt={state.selectedItem.name}
+                  className="img-fluid rounded shadow-sm mb-3"
+                />
+              </div>
+              <div className="col-md-6">
+                <h5 className="mb-3">Chi tiết sản phẩm</h5>
+                <Card className="mb-3">
+                  <Card.Body>
+                    <p><strong>Tên:</strong> {state.selectedItem.name}</p>
+                    <p><strong>Mô tả:</strong> {state.selectedItem.description || 'Không có mô tả'}</p>
+                    <p><strong>Giá:</strong> ${(state.selectedItem.priceCents / 100).toFixed(2)} USDC</p>
+                  </Card.Body>
+                </Card>
+
+                {state.selectedItem.attributes && state.selectedItem.attributes.length > 0 && (
+                  <Card>
+                    <Card.Header>Thuộc tính</Card.Header>
+                    <Card.Body>
+                      {state.selectedItem.attributes.map((attr, index) => (
+                        <div key={index} className="d-flex justify-content-between mb-2">
+                          <span className="text-muted">{attr.traitType}</span>
+                          <span className="badge bg-secondary">{attr.value}</span>
+                        </div>
+                      ))}
+                    </Card.Body>
+                  </Card>
+                )}
+
+                {state.buyError && (
+                  <Alert variant="danger" className="mt-3">
+                    {state.buyError}
+                  </Alert>
+                )}
+              </div>
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM })}>
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              onClick={buyItemWithPhantomWallet}
+              disabled={state.buyLoading}
+            >
+              {state.buyLoading ? (
+                <>
+                  <Spinner
+                    as="span"
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    aria-hidden="true"
+                    className="me-2"
+                  />
+                  Đang xử lý...
+                </>
+              ) : (
+                'Xác nhận mua'
+              )}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
     </div>
   );
 };
 
 export default MarketplaceHome;
-
