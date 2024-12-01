@@ -543,7 +543,7 @@ const MarketplaceHome = ({ referenceId }) => {
             onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { itemsPerPage: Number(e.target.value) } })}
             className="w-auto"
           >
-            {[5, 10, 20, 50].map((num) => (
+            {[6, 12, 24, 50].map((num) => (
               <option key={num} value={num}>
                 {num} sản phẩm/trang
               </option>

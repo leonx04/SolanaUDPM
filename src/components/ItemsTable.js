@@ -363,10 +363,10 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                 setCurrentPage(1); // Reset to first page when changing items per page
                             }}
                         >
-                            <option value={5}>5 per page</option>
-                            <option value={10}>10 per page</option>
-                            <option value={20}>20 per page</option>
-                            <option value={50}>50 per page</option>
+                            <option value={5}>5 items</option>
+                            <option value={10}>10 items</option>
+                            <option value={20}>20 items</option>
+                            <option value={50}>50 items</option>
                         </select>
                         <select
                             className="form-select form-select-sm me-2"
