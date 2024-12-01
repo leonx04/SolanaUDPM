@@ -161,6 +161,7 @@ const MarketplaceHome = ({ referenceId }) => {
     return state.allItems.filter(itemData =>
       itemData.type === 'UniqueAsset' &&
       itemData.item.priceCents !== null &&
+      itemData.item.priceCents > 0 && // Add this condition
       itemData.item.owner.referenceId !== referenceId &&
       itemData.item.name.toLowerCase().includes(state.searchQuery.toLowerCase()) &&
       (state.priceRange.min === '' || itemData.item.priceCents >= state.priceRange.min * 100) &&
@@ -176,14 +177,16 @@ const MarketplaceHome = ({ referenceId }) => {
   }, [state.allItems, referenceId, state.searchQuery, state.priceRange, state.sortOrder]);
 
   const featuredItems = useMemo(() => {
-    const sortedItems = [...state.allItems].sort((a, b) => {
-      // Sort by price (lowest first)
-      const priceDiff = a.item.priceCents - b.item.priceCents;
-      if (priceDiff !== 0) return priceDiff;
-      
-      // If prices are equal, sort by date (newest first)
-      return new Date(b.item.createdAt) - new Date(a.item.createdAt);
-    });
+    const sortedItems = state.allItems
+      .filter(itemData => itemData.item.priceCents > 0) // Add this filter
+      .sort((a, b) => {
+        // Sort by price (lowest first)
+        const priceDiff = a.item.priceCents - b.item.priceCents;
+        if (priceDiff !== 0) return priceDiff;
+        
+        // If prices are equal, sort by date (newest first)
+        return new Date(b.item.createdAt) - new Date(a.item.createdAt);
+      });
     
     return sortedItems.slice(0, 3);
   }, [state.allItems]);
@@ -628,3 +631,4 @@ const MarketplaceHome = ({ referenceId }) => {
 };
 
 export default MarketplaceHome;
+
