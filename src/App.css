@@ -855,24 +855,234 @@
 }
 
 .table-container {
-  overflow-x: auto; /* Bật cuộn ngang khi nội dung vượt quá chiều rộng */
-  -webkit-overflow-scrolling: touch; /* Tăng trải nghiệm cuộn mượt trên thiết bị cảm ứng */
+  overflow-x: auto;
+  /* Bật cuộn ngang khi nội dung vượt quá chiều rộng */
+  -webkit-overflow-scrolling: touch;
+  /* Tăng trải nghiệm cuộn mượt trên thiết bị cảm ứng */
 }
 
 .table {
-  width: 100%; /* Bảng chiếm toàn bộ chiều rộng của container */
-  max-width: 100%; /* Giới hạn chiều rộng tối đa */
-  border-collapse: collapse; /* Loại bỏ khoảng cách giữa các ô */
+  width: 100%;
+  /* Bảng chiếm toàn bộ chiều rộng của container */
+  max-width: 100%;
+  /* Giới hạn chiều rộng tối đa */
+  border-collapse: collapse;
+  /* Loại bỏ khoảng cách giữa các ô */
 }
 
 .table th,
 .table td {
-  text-align: left; /* Canh trái nội dung */
-  padding: 0.75rem; /* Khoảng cách trong ô */
-  border: 1px solid #dee2e6; /* Đường viền */
+  text-align: left;
+  /* Canh trái nội dung */
+  padding: 0.75rem;
+  /* Khoảng cách trong ô */
+  border: 1px solid #dee2e6;
+  /* Đường viền */
 }
 
 .table th {
-  background-color: #f8f9fa; /* Màu nền tiêu đề */
-  font-weight: bold; /* In đậm tiêu đề */
+  background-color: #f8f9fa;
+  /* Màu nền tiêu đề */
+  font-weight: bold;
+  /* In đậm tiêu đề */
+}
+
+.img-fluid.rounded-banner {
+  height: 400px;
+  /* Hoặc giá trị phù hợp với thiết kế */
+  object-fit: cover;
+  /* Đảm bảo hình ảnh không bị méo */
+  border-radius: 15px;
+  /* Tạo bo góc mềm mại */
+}
+
+.carousel-item-container {
+  position: relative;
+}
+
+.carousel-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Nền mờ */
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.carousel-overlay h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.carousel-overlay p {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+/* --- Modal Enhancements for Web3 UI --- */
+
+/* Modal Base Styling */
+.modal-content {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease-in-out;
+  backdrop-filter: blur(15px);
+}
+
+.modal-content .modal-header,
+.modal-content .modal-footer {
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+/* Modal Animation */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+  transform: translateY(0);
+}
+
+.modal-dialog {
+  max-width: 90%;
+}
+
+@media (min-width: 576px) {
+  .modal-dialog {
+    max-width: 500px;
+  }
+}
+
+@media (min-width: 992px) {
+  .modal-dialog.modal-lg {
+    max-width: 800px;
+  }
+}
+
+/* --- Background Gradient for Content --- */
+
+/* Light and Dark Gradient Background for Content */
+.light-theme .content-area {
+  background: linear-gradient(135deg, rgba(240, 248, 255, 0.8), rgba(255, 255, 255, 0.7));
+  background-attachment: fixed;
+}
+
+.dark-theme .content-area {
+  background: linear-gradient(135deg, rgba(18, 18, 18, 0.9), rgba(30, 30, 30, 0.7));
+  background-attachment: fixed;
+}
+
+/* General Gradient Enhancements */
+.gradient-background {
+  background: linear-gradient(135deg, #1f3c72, #2a5298, #4ca1af);
+  color: #fff;
+  padding: 3rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+/* Smooth Gradient Transitions */
+@keyframes gradient-animation {
+  0% {
+    background: linear-gradient(135deg, #1f3c72, #2a5298, #4ca1af);
+  }
+
+  50% {
+    background: linear-gradient(135deg, #4ca1af, #2a5298, #1f3c72);
+  }
+
+  100% {
+    background: linear-gradient(135deg, #1f3c72, #2a5298, #4ca1af);
+  }
+}
+
+.gradient-background {
+  animation: gradient-animation 15s ease infinite;
+}
+
+/* Modal Base Styling */
+.modal-content {
+  background-color: rgba(255, 255, 255, 0.9);
+  /* Màu nền nhẹ nhàng */
+  border-radius: 15px;
+  /* Bo góc mềm mại */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  /* Đổ bóng tạo chiều sâu */
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  backdrop-filter: blur(10px);
+  /* Hiệu ứng mờ nền */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* Đường viền tinh tế */
+}
+
+.modal-header,
+.modal-footer {
+  background-color: rgba(240, 240, 240, 0.9);
+  /* Nền hơi khác biệt */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.modal-header .modal-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  color: #555;
+}
+
+.modal-footer {
+  justify-content: center;
+}
+
+.modal-footer .btn {
+  border-radius: 25px;
+  padding: 0.5rem 1.5rem;
+}
+
+/* Modal Animation */
+.modal.fade .modal-dialog {
+  transform: translateY(-50px);
+  opacity: 0;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Responsive Enhancements */
+.modal-dialog {
+  max-width: 90%;
+}
+
+@media (min-width: 768px) {
+  .modal-dialog {
+    max-width: 600px;
+  }
+}
+
+@media (min-width: 992px) {
+  .modal-dialog.modal-lg {
+    max-width: 800px;
+  }
+}
+
+/* Backdrop Styling */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+  /* Mờ nền */
+  backdrop-filter: blur(5px);
+  /* Mờ nền với độ sâu */
 }
