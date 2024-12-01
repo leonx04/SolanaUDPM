@@ -1086,3 +1086,6 @@
   backdrop-filter: blur(5px);
   /* Mờ nền với độ sâu */
 }
+.badge-success{
+  background-color: rgba(6, 110, 14, 0.6);
+}

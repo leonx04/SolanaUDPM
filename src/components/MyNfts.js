@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { Alert, Button, Modal, ProgressBar } from 'react-bootstrap';
 import { apiKey } from '../api';
-import { Modal, Button, Alert, ProgressBar } from 'react-bootstrap';
 import ItemsTable from './ItemsTable';
 
 const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
@@ -78,10 +78,10 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 50 * 1024 * 1024) {
         setFormErrors(prev => ({
           ...prev,
-          image: "Kích thước file không được vượt quá 5MB"
+          image: "Kích thước file không được vượt quá 50MB"
         }));
         return;
       }
@@ -302,7 +302,7 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
                     <div className="invalid-feedback">{formErrors.image}</div>
                   )}
                   <small className="text-muted d-block mt-1">
-                    Hỗ trợ: JPG, PNG, GIF (Max: 5MB)
+                    Hỗ trợ: JPG, PNG, GIF (Max: 50MB)
                   </small>
                 </div>
                 {preview && (

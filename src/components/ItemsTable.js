@@ -468,7 +468,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                                 </td>
                                                 <td>
                                                     {(item.priceCents > 0 && item.status === 'Committed') ? (
-                                                        <span className="badge badge-for-sale">
+                                                        <span className="badge badge-success">
                                                             Đang Bán
                                                             <br />
                                                             <small>{(item.priceCents / 100).toFixed(2)} USDC</small>
