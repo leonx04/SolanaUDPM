@@ -1,39 +1,35 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiKey } from '../api';
 import { Modal, Button, Form, Alert, Pagination } from 'react-bootstrap';
+import { Search } from 'react-bootstrap-icons';
 
 const ItemsTable = ({ ownerReferenceId }) => {
-    // State quản lý danh sách items
+    // State management
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    // State quản lý việc liệt kê và hủy bán
     const [selectedItem, setSelectedItem] = useState(null);
     const [listingPrice, setListingPrice] = useState('');
     const [showListingModal, setShowListingModal] = useState(false);
     const [listingError, setListingError] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
-
-    // State mới cho chức năng chỉnh sửa
     const [showEditModal, setShowEditModal] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [editImageUrl, setEditImageUrl] = useState('');
     const [editAttributes, setEditAttributes] = useState([]);
     const [editError, setEditError] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    // Thêm vào các state khác của component
     const [editImageFile, setEditImageFile] = useState(null);
     const [editImagePreview, setEditImagePreview] = useState(null);
-    // Các state mới cho phân trang
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(10); // Update: Using itemsPerPage
+    const [marketFilter, setMarketFilter] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
 
-    // Thêm ở đầu file, ngay sau các import
     const CLOUDINARY_UPLOAD_PRESET = 'ARTSOLANA';
     const CLOUDINARY_CLOUD_NAME = 'dy3nmkszo';
 
-    // Hàm upload ảnh lên Cloudinary
+    // Function to upload image to Cloudinary
     const uploadImageToCloudinary = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -85,10 +81,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
         }
     };
 
-    // State quản lý bộ lọc thị trường
-    const [marketFilter, setMarketFilter] = useState('all');
-
-    // Hàm tìm nạp danh sách items
+    // Function to fetch items
     const fetchItems = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -111,6 +104,8 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 default:
                     break;
             }
+
+            params.append('limit', itemsPerPage.toString()); // Update: Adding itemsPerPage to params
 
             url += `?${params.toString()}`;
 
@@ -138,40 +133,9 @@ const ItemsTable = ({ ownerReferenceId }) => {
         } finally {
             setLoading(false);
         }
-    }, [ownerReferenceId, marketFilter]);
+    }, [ownerReferenceId, marketFilter, itemsPerPage]); // Update: Adding itemsPerPage to dependencies
 
-    // Thay đổi cách tính currentItems và totalPages
-    const filteredItems = items.filter(itemData => {
-        const { type, item } = itemData;
-
-        // Lọc theo loại và trạng thái thị trường
-        if (type === 'Currency') return false;
-
-        if (marketFilter === 'forSale') {
-            return item.priceCents > 0 && item.status === 'Committed';
-        }
-
-        if (marketFilter === 'notForSale') {
-            return !item.priceCents || item.priceCents === 0;
-        }
-
-        return true;
-    });
-
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
-
-    // Tính tổng số trang dựa trên filteredItems
-    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-
-
-    // Tự động tải items khi component mount hoặc các dependency thay đổi
-    useEffect(() => {
-        fetchItems();
-    }, [ownerReferenceId, marketFilter, fetchItems]);  // Thêm fetchItems vào dependencies
-
-    // Hàm xử lý liệt kê tài sản bán
+    // Function to handle listing for sale
     const handleListForSale = async () => {
         if (!selectedItem || !listingPrice) {
             setListingError('Vui lòng nhập giá hợp lệ');
@@ -193,7 +157,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     },
                     body: JSON.stringify({
                         price: {
-                            currencyId: 'USDC', // Cố định sử dụng USDC
+                            currencyId: 'USDC',
                             naturalAmount: listingPrice
                         }
                     })
@@ -207,12 +171,10 @@ const ItemsTable = ({ ownerReferenceId }) => {
 
             const data = await response.json();
 
-            // Thay vì window.location.href, mở tab mới
             if (data.consentUrl) {
                 window.open(data.consentUrl, '_blank', 'noopener,noreferrer');
             }
 
-            // Làm mới danh sách sau khi liệt kê
             fetchItems();
         } catch (err) {
             setListingError(err.message);
@@ -221,13 +183,13 @@ const ItemsTable = ({ ownerReferenceId }) => {
             setShowListingModal(false);
         }
     };
-    // Hàm xử lý hủy bán tài sản
+
+    // Function to handle cancelling sale
     const handleCancelSale = async (itemId) => {
         setIsProcessing(true);
         setListingError(null);
 
         try {
-            // Gọi API để hủy bán tài sản với URL mới cho unique assets
             const response = await fetch(
                 `https://api.gameshift.dev/nx/unique-assets/${itemId}/cancel-listing`,
                 {
@@ -246,12 +208,10 @@ const ItemsTable = ({ ownerReferenceId }) => {
 
             const data = await response.json();
 
-            // Mở URL đồng ý trong tab mới thay vì chuyển hướng
             if (data.consentUrl) {
                 window.open(data.consentUrl, '_blank', 'noopener,noreferrer');
             }
 
-            // Làm mới danh sách sau khi hủy bán
             fetchItems();
         } catch (err) {
             setListingError(err.message);
@@ -260,8 +220,7 @@ const ItemsTable = ({ ownerReferenceId }) => {
         }
     };
 
-
-    // Mở modal để liệt kê tài sản
+    // Function to open listing modal
     const openListingModal = (item) => {
         setSelectedItem(item);
         setListingPrice('');
@@ -269,43 +228,41 @@ const ItemsTable = ({ ownerReferenceId }) => {
         setShowListingModal(true);
     };
 
-    // Hàm rút gọn văn bản
+    // Function to truncate text
     const truncateText = (text, maxLength) => {
         if (!text) return '-';
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     };
 
-    // Hàm mở modal chỉnh sửa
+    // Function to open edit modal
     const openEditModal = (item) => {
         setEditItem(item);
         setEditImageUrl(item.imageUrl || '');
         setEditImageFile(null);
         setEditImagePreview(null);
-
-        // Khởi tạo attributes từ item hiện tại
         setEditAttributes(item.attributes || []);
-
         setEditError(null);
         setShowEditModal(true);
     };
 
-    // Hàm thêm thuộc tính mới
+    // Function to add attribute
     const addAttribute = () => {
         setEditAttributes([...editAttributes, { traitType: '', value: '' }]);
     };
 
-    // Hàm xóa thuộc tính
+    // Function to remove attribute
     const removeAttribute = (indexToRemove) => {
         setEditAttributes(editAttributes.filter((_, index) => index !== indexToRemove));
     };
 
-    // Hàm cập nhật thuộc tính
+    // Function to update attribute
     const updateAttribute = (index, field, value) => {
         const newAttributes = [...editAttributes];
         newAttributes[index][field] = value;
         setEditAttributes(newAttributes);
     };
 
+    // Function to handle editing asset
     const handleEditAsset = async () => {
         if (!editItem) return;
 
@@ -315,12 +272,10 @@ const ItemsTable = ({ ownerReferenceId }) => {
         try {
             let newImageUrl = editImageUrl;
 
-            // Nếu có file ảnh mới, tiến hành upload
             if (editImageFile) {
                 newImageUrl = await uploadImageToCloudinary(editImageFile);
             }
 
-            // Chuẩn bị payload cho API
             const payload = {
                 imageUrl: newImageUrl,
                 attributes: editAttributes
@@ -344,10 +299,8 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 throw new Error(errorData.message || 'Không thể chỉnh sửa tài sản');
             }
 
-            // Làm mới danh sách sau khi chỉnh sửa
             await fetchItems();
 
-            // Đóng modal và reset state
             setShowEditModal(false);
             setEditImageFile(null);
             setEditImagePreview(null);
@@ -358,23 +311,63 @@ const ItemsTable = ({ ownerReferenceId }) => {
         }
     };
 
-    // Thêm polling để cập nhật real-time
+    // Effect to fetch items
+    useEffect(() => {
+        fetchItems();
+    }, [fetchItems, itemsPerPage]); // Update: Adding itemsPerPage to dependencies
+
+    // Effect for polling
     useEffect(() => {
         const pollInterval = setInterval(() => {
             fetchItems();
-        }, 10000); // Kiểm tra mỗi 10 giây
+        }, 10000);
 
         return () => clearInterval(pollInterval);
-    }, [fetchItems]);
+    }, [fetchItems, itemsPerPage]); // Update: Adding itemsPerPage to dependencies
+
+
+    // Filtered and searched items
+    const filteredItems = items.filter(itemData => {
+        const { type, item } = itemData;
+
+        if (type === 'Currency') return false;
+
+        const matchesFilter = (marketFilter === 'forSale' && item.priceCents > 0 && item.status === 'Committed') ||
+                              (marketFilter === 'notForSale' && (!item.priceCents || item.priceCents === 0)) ||
+                              marketFilter === 'all';
+
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              item.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+        return matchesFilter && matchesSearch;
+    });
+
+    // Pagination
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
     return (
         <div className="card w-100">
-            {/* Tiêu đề và các nút điều khiển */}
             <div className="card-header ">
                 <div className="d-flex justify-content-between align-items-center">
                     <h5 className="card-title mb-0">Danh Sách Items</h5>
                     <div className="d-flex align-items-center">
-                        {/* Dropdown lọc thị trường */}
+                        <select
+                            className="form-select form-select-sm me-2"
+                            style={{ width: 'auto' }}
+                            value={itemsPerPage}
+                            onChange={(e) => {
+                                setItemsPerPage(Number(e.target.value));
+                                setCurrentPage(1); // Reset to first page when changing items per page
+                            }}
+                        >
+                            <option value={5}>5 per page</option>
+                            <option value={10}>10 per page</option>
+                            <option value={20}>20 per page</option>
+                            <option value={50}>50 per page</option>
+                        </select>
                         <select
                             className="form-select form-select-sm me-2"
                             style={{ width: 'auto' }}
@@ -395,9 +388,22 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 </div>
             </div>
 
-            {/* Nội dung danh sách items */}
             <div className="card-body p-0">
-                {/* Trạng thái tải và lỗi */}
+                <div className="p-3">
+                    <div className="input-group">
+                        <span className="input-group-text">
+                            <Search />
+                        </span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Tìm kiếm theo tên hoặc mô tả..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+
                 {loading ? (
                     <div className="d-flex justify-content-center align-items-center p-5">
                         <div className="spinner-border text-primary" role="status">
@@ -406,249 +412,135 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     </div>
                 ) : error ? (
                     <div className="alert alert-danger m-3">{error}</div>
-                ) : items.length === 0 ? (
+                ) : filteredItems.length === 0 ? (
                     <div className="text-center py-5 text-muted">Không tìm thấy items</div>
                 ) : (
                     <>
                         <div className="table-responsive">
-                            <style>
-                                {`
-                    @media (max-width: 768px) {
-                        .table-responsive {
-                            display: block;
-                            width: 100%;
-                            overflow-x: auto;
-                            -webkit-overflow-scrolling: touch;
-                        }
-                        
-                        .mobile-table-wrapper {
-                            min-width: 800px;
-                        }
-                    }
+                            <table className="table table-hover mb-0">
+                                <thead>
+                                    <tr className="bg-light">
+                                        <th style={{ width: '80px' }}>Ảnh</th>
+                                        <th style={{ width: '180px' }}>Tên</th>
+                                        <th style={{ width: '200px' }}>Mô tả</th>
+                                        <th style={{ width: '120px' }}>Trạng Thái Bán</th>
+                                        <th style={{ width: '150px' }}>Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentItems.map((itemData, index) => {
+                                        const { type, item } = itemData;
+                                        if (type === 'Currency') return null;
 
-                    .item-image {
-                        width: 40px;
-                        height: 40px;
-                        object-fit: cover;
-                        border-radius: 4px;
-                        transition: transform 0.2s;
-                    }
-
-                    .item-image:hover {
-                        transform: scale(3);
-                        z-index: 1000;
-                    }
-
-                    .table > :not(caption) > * > * {
-                        padding: 0.75rem;
-                        vertical-align: middle;
-                    }
-
-                    .badge-currency {
-                        background-color: #e3f2fd;
-                        color: #1976d2;
-                    }
-
-                    .badge-asset {
-                        background-color: #f3e5f5;
-                        color: #7b1fa2;
-                    }
-
-                    .badge-for-sale {
-                        background-color: #e8f5e9;
-                        color: #2e7d32;
-                    }
-
-                    .table-hover tbody tr:hover {
-                        background-color: rgba(0, 0, 0, 0.02);
-                    }
-                    `}
-                            </style>
-                            <div className="mobile-table-wrapper">
-                                <table className="table table-hover mb-0">
-                                    {/* Tiêu đề bảng */}
-                                    <thead>
-                                        <tr className="bg-light">
-                                            <th style={{ width: '90px' }}>Loại</th>
-                                            <th style={{ width: '80px' }}>Ảnh</th>
-                                            <th style={{ width: '180px' }}>Tên</th>
-                                            <th style={{ width: '200px' }}>Mô tả</th>
-                                            <th style={{ width: '120px' }}>Trạng Thái Bán</th>
-                                            <th style={{ width: '150px' }}>Hành Động</th>
-                                        </tr>
-                                    </thead>
-                                    {/* Nội dung bảng */}
-                                    <tbody>
-                                        {currentItems.map((itemData, index) => {
-                                            const { type, item } = itemData;
-                                            if (type === 'Currency') return null;  // Ẩn các item loại Currency
-
-                                            return (
-                                                <tr key={index}>
-                                                    {/* Các cột thông tin */}
-                                                    <td>
-                                                        <span className={`badge ${type === 'Currency' ? 'badge-currency' : 'badge-asset'}`}>
-                                                            {type}
+                                        return (
+                                            <tr key={index}>
+                                                <td>
+                                                    {item.imageUrl ? (
+                                                        <img
+                                                            src={item.imageUrl}
+                                                            alt={item.name}
+                                                            className="item-image"
+                                                            title={item.name}
+                                                            style={{
+                                                                width: "40px",
+                                                                height: "40px",
+                                                                objectFit: "cover",
+                                                                borderRadius: "4px"
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div
+                                                            className="bg-light d-flex align-items-center justify-content-center"
+                                                            style={{ width: '40px', height: '40px', borderRadius: '4px' }}
+                                                        >
+                                                            <i className="fas fa-image text-muted"></i>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <div className="fw-medium">{item.name || item.symbol || '-'}</div>
+                                                    <small className="text-muted">ID: {truncateText(item.id, 15)}</small>
+                                                </td>
+                                                <td>
+                                                    <div className="text-truncate" style={{ maxWidth: '200px' }} title={item.description}>
+                                                        {item.description || '-'}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    {(item.priceCents > 0 && item.status === 'Committed') ? (
+                                                        <span className="badge badge-for-sale">
+                                                            Đang Bán
+                                                            <br />
+                                                            <small>{(item.priceCents / 100).toFixed(2)} USDC</small>
                                                         </span>
-                                                    </td>
-                                                    <td>
-                                                        {item.imageUrl ? (
-                                                            <img
-                                                                src={item.imageUrl}
-                                                                alt={item.name}
-                                                                className="item-image"
-                                                                title={item.name}
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className="bg-light d-flex align-items-center justify-content-center"
-                                                                style={{ width: '40px', height: '40px', borderRadius: '4px' }}
-                                                            >
-                                                                <i className="fas fa-image text-muted"></i>
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                    <td>
-                                                        <div className="fw-medium">{item.name || item.symbol || '-'}</div>
-                                                        <small className="text-muted">ID: {truncateText(item.id, 15)}</small>
-                                                    </td>
-                                                    <td>
-                                                        {type !== 'Currency' && (
-                                                            <div className="text-truncate" style={{ maxWidth: '200px' }} title={item.description}>
-                                                                {item.description || '-'}
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                    <td>
-                                                        {(item.priceCents > 0 && item.status === 'Committed') ? (
-                                                            <span className="badge badge-for-sale">
-                                                                Đang Bán
-                                                                <br />
-                                                                <small>{(item.priceCents / 100).toFixed(2)} USDC</small>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="badge bg-secondary">Chưa Bán</span>
-                                                        )}
-                                                    </td>
-                                                    {/* Nút hành động */}
-                                                    <td>
-                                                        {type === 'UniqueAsset' && (
-                                                            <div className="d-flex gap-2">
-                                                                {/* Nút chỉnh sửa */}
-                                                                {!(item.priceCents > 0 && item.status === 'Committed') && (
-                                                                    <Button
-                                                                        variant="outline-secondary"
-                                                                        size="sm"
-                                                                        onClick={() => openEditModal(item)}
-                                                                    >
-                                                                        Sửa
-                                                                    </Button>
-                                                                )}
-
-                                                                {/* Nút bán/hủy bán */}
-                                                                {item.priceCents > 0 && item.status === 'Committed' ? (
-                                                                    <Button
-                                                                        variant="outline-danger"
-                                                                        size="sm"
-                                                                        onClick={() => handleCancelSale(item.id)}
-                                                                        disabled={isProcessing}
-                                                                    >
-                                                                        {isProcessing ? 'Đang Xử Lý...' : 'Hủy Bán'}
-                                                                    </Button>
-                                                                ) : (
-                                                                    <Button
-                                                                        variant="outline-primary"
-                                                                        size="sm"
-                                                                        onClick={() => openListingModal(item)}
-                                                                    >
-                                                                        Liệt Kê Bán
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-
-                                </table>
-                            </div>
+                                                    ) : (
+                                                        <span className="badge bg-secondary">Chưa Bán</span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {type === 'UniqueAsset' && (
+                                                        <div className="d-flex gap-2">
+                                                            {!(item.priceCents > 0 && item.status === 'Committed') && (
+                                                                <Button
+                                                                    variant="outline-secondary"
+                                                                    size="sm"
+                                                                    onClick={() => openEditModal(item)}
+                                                                >
+                                                                    Sửa
+                                                                </Button>
+                                                            )}
+                                                            {item.priceCents > 0 && item.status === 'Committed' ? (
+                                                                <Button
+                                                                    variant="outline-danger"
+                                                                    size="sm"
+                                                                    onClick={() => handleCancelSale(item.id)}
+                                                                    disabled={isProcessing}
+                                                                >
+                                                                    {isProcessing ? 'Đang Xử Lý...' : 'Hủy Bán'}
+                                                                </Button>
+                                                            ) : (
+                                                                <Button
+                                                                    variant="outline-primary"
+                                                                    size="sm"
+                                                                    onClick={() => openListingModal(item)}
+                                                                >
+                                                                    Liệt Kê Bán
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
 
-                        {/* Phân trang */}
                         <div className="d-flex justify-content-between align-items-center p-3">
-                            <div className="d-flex align-items-center">
-                                <div className="d-flex align-items-center">
-                                    <span className="me-2">Hiển thị:</span>
-                                    <select
-                                        className="form-select form-select-sm"
-                                        style={{ width: 'auto' }}
-                                        value={itemsPerPage}
-                                        onChange={(e) => {
-                                            setItemsPerPage(Number(e.target.value));
-                                            setCurrentPage(1); // Reset về trang đầu
-                                        }}
-                                    >
-                                        {[5, 10, 20, 50].map(size => (
-                                            <option key={size} value={size}>
-                                                {size} mục
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
+                            <div>
+                                Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredItems.length)} trong số {filteredItems.length} items
                             </div>
-                            <Pagination className="mb-0">
-                                <Pagination.First
-                                    onClick={() => setCurrentPage(1)}
-                                    disabled={currentPage === 1}
-                                />
-                                <Pagination.Prev
-                                    onClick={() => setCurrentPage(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                />
-
-                                {(() => {
-                                    const paginationItems = [];
-                                    const maxPagesToShow = 5;
-                                    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-                                    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
-                                    if (endPage - startPage + 1 < maxPagesToShow) {
-                                        startPage = Math.max(1, endPage - maxPagesToShow + 1);
-                                    }
-
-                                    for (let number = startPage; number <= endPage; number++) {
-                                        paginationItems.push(
-                                            <Pagination.Item
-                                                key={number}
-                                                active={number === currentPage}
-                                                onClick={() => setCurrentPage(number)}
-                                            >
-                                                {number}
-                                            </Pagination.Item>
-                                        );
-                                    }
-
-                                    return paginationItems;
-                                })()}
-
-                                <Pagination.Next
-                                    onClick={() => setCurrentPage(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                />
-                                <Pagination.Last
-                                    onClick={() => setCurrentPage(totalPages)}
-                                    disabled={currentPage === totalPages}
-                                />
+                            <Pagination>
+                                <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
+                                <Pagination.Prev onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} />
+                                {[...Array(totalPages)].map((_, index) => (
+                                    <Pagination.Item
+                                        key={index + 1}
+                                        active={currentPage === index + 1}
+                                        onClick={() => setCurrentPage(index + 1)}
+                                    >
+                                        {index + 1}
+                                    </Pagination.Item>
+                                ))}
+                                <Pagination.Next onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} />
+                                <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
                             </Pagination>
                         </div>
                     </>
                 )}
             </div>
 
-            {/* Modal liệt kê bán */}
             <Modal show={showListingModal} onHide={() => setShowListingModal(false)}>
                 <Modal.Header closeButton>
                     <Modal.Title>Liệt Kê Tài Sản Bán</Modal.Title>
@@ -657,7 +549,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     {listingError && (
                         <Alert variant="danger">{listingError}</Alert>
                     )}
-
                     <Form>
                         <Form.Group>
                             <Form.Label>Tên Tài Sản</Form.Label>
@@ -667,7 +558,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                 readOnly
                             />
                         </Form.Group>
-
                         <Form.Group className="mt-3">
                             <Form.Label>Giá (USDC)</Form.Label>
                             <Form.Control
@@ -699,7 +589,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                 </Modal.Footer>
             </Modal>
 
-            {/* Modal chỉnh sửa tài sản */}
             <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
                 <Modal.Header closeButton>
                     <Modal.Title>Chỉnh Sửa Tài Sản</Modal.Title>
@@ -708,7 +597,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     {editError && (
                         <Alert variant="danger">{editError}</Alert>
                     )}
-
                     <Form>
                         <Form.Group className="mb-3">
                             <Form.Label>Tên Tài Sản</Form.Label>
@@ -718,7 +606,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                 readOnly
                             />
                         </Form.Group>
-
                         <Form.Group className="mb-3">
                             <Form.Label>Hình Ảnh</Form.Label>
                             <div className="d-flex gap-3 align-items-start">
@@ -745,9 +632,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                 )}
                             </div>
                         </Form.Group>
-
-                        {/* Loại bỏ trường URL hình ảnh cũ */}
-
                         <div className="d-flex justify-content-between align-items-center mb-2">
                             <h6>Thuộc Tính</h6>
                             <Button
@@ -758,7 +642,6 @@ const ItemsTable = ({ ownerReferenceId }) => {
                                 Thêm Thuộc Tính
                             </Button>
                         </div>
-
                         {editAttributes.map((attr, index) => (
                             <div key={index} className="d-flex mb-2 gap-2">
                                 <Form.Control
@@ -800,9 +683,9 @@ const ItemsTable = ({ ownerReferenceId }) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-
         </div>
     );
 };
 
 export default ItemsTable;
+

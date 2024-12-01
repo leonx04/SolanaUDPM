@@ -288,7 +288,7 @@ const PurchaseHistory = ({ referenceId }) => {
             <InputGroup style={{ flex: 1, minWidth: '200px' }}>
               <Form.Control
                 type="text"
-                placeholder="Tìm kiếm sản phẩm"
+                placeholder="Tìm kiếm theo tên hoặc mô tả..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ height: '38px' }}
