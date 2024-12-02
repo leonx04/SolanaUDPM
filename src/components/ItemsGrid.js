@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useContext } from 'react';
 import { Alert, Button, Card, Col, Form, Modal, Pagination, Row, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
+import { UserContext } from '../contexts/UserContext';
 
 const ItemsGrid = ({ referenceId, isOwnProfile }) => {
+    const [userData] = useContext(UserContext);
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -344,6 +346,13 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
                 throw new Error("Vui lòng kết nối ví Phantom trước khi mua");
             }
 
+            // Ensure the buyer is using their own account
+            const buyerId = userData.referenceId;
+
+            if (buyerId === selectedItem.owner.referenceId) {
+                throw new Error("Bạn không thể mua sản phẩm của chính mình");
+            }
+
             const response = await fetch(
                 `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/buy`,
                 {
@@ -354,7 +363,7 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
                         'x-api-key': apiKey
                     },
                     body: JSON.stringify({
-                        buyerId: referenceId
+                        buyerId: buyerId
                     })
                 }
             );

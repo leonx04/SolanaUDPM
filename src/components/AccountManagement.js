@@ -1,17 +1,11 @@
-import axios from 'axios';
-import { get, getDatabase, ref, update } from "firebase/database";
 import React, { useContext, useEffect, useState } from 'react';
 import { Alert, Button, Col, Form, Modal, Nav, Row, Tab } from 'react-bootstrap';
-import {
-  Edit3,
-  Facebook,
-  GitHub,
-  Globe,
-  Youtube
-} from 'react-feather';
+import { Edit3, Facebook, GitHub, Globe, Youtube } from 'react-feather';
 import { useParams } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import ItemsGrid from './ItemsGrid';
+import axios from 'axios';
+import { get, getDatabase, ref, update } from "firebase/database";
 
 const SOCIAL_PLATFORMS = {
   facebook: { icon: Facebook, color: '#1877F2', prefix: 'https://facebook.com/' },
@@ -164,7 +158,7 @@ const AccountManagement = () => {
   return (
     <div className="profile-container">
       <div
-        className="cover-image position-relative"
+        className="cover-image position-relative rounded-3"
         style={{
           height: '300px',
           backgroundImage: `url(${profileData?.coverImageUrl || 'https://via.placeholder.com/1200x300'})`,
@@ -374,3 +368,4 @@ const AccountManagement = () => {
 };
 
 export default AccountManagement;
+
