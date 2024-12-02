@@ -8,7 +8,7 @@ import {
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Dropdown } from 'react-bootstrap';
+import { Button, Dropdown, Modal, Form } from 'react-bootstrap';
 import { Navigate, NavLink, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import './App.css';
 import AuthForm from "./components/AuthForm";
@@ -16,7 +16,6 @@ import Home from "./components/Home";
 import MyNfts from "./components/MyNfts";
 import User from "./components/User";
 import PurchaseHistory from "./components/PurchaseHistory";
-
 
 // Địa chỉ token USDC chính thức trên Solana devnet
 const USDC_MINT_ADDRESS = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
@@ -46,6 +45,12 @@ function App() {
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletError, setWalletError] = useState(null);
 
+  // New states for notification and signing
+  const [showNotification, setShowNotification] = useState(false);
+  const [showSigningModal, setShowSigningModal] = useState(false);
+  const [messageToSign, setMessageToSign] = useState('');
+  const [signedMessage, setSignedMessage] = useState('');
+
   // Hàm lấy số dư USDC
   const getUsdcBalance = async (connection, walletPublicKey) => {
     try {
@@ -74,6 +79,7 @@ function App() {
       return 0;
     }
   };
+
   // Hàm fetch số dư USDC
   const fetchUsdcBalance = useCallback(async () => {
     if (walletAddress) {
@@ -87,14 +93,11 @@ function App() {
     }
   }, [walletAddress, connection]);
 
-
-
   // Theo dõi theme và áp dụng class
   useEffect(() => {
     document.body.classList.remove('light-theme', 'dark-theme');
     document.body.classList.add(`${theme}-theme`);
   }, [theme]);
-
 
   useEffect(() => {
     if (walletAddress) {
@@ -194,6 +197,13 @@ function App() {
       // Lấy số dư USDC
       await fetchUsdcBalance();
 
+      // Show notification
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+
+      // Show signing modal
+      setShowSigningModal(true);
+
     } catch (err) {
       console.error("Lỗi khi kết nối ví:", err);
 
@@ -231,6 +241,21 @@ function App() {
     } catch (err) {
       console.error("Lỗi khi ngắt kết nối ví:", err);
       setWalletError("Không thể ngắt kết nối ví. Vui lòng thử lại.");
+    }
+  };
+
+  const signMessage = async () => {
+    try {
+      const provider = window.phantom?.solana;
+      if (!provider) throw new Error("Phantom wallet not found!");
+
+      const encodedMessage = new TextEncoder().encode(messageToSign);
+      const signedMessage = await provider.signMessage(encodedMessage, "utf8");
+      setSignedMessage(JSON.stringify(signedMessage));
+      setShowSigningModal(false);
+    } catch (error) {
+      console.error("Error signing message:", error);
+      setWalletError("Không thể ký tin nhắn. Vui lòng thử lại.");
     }
   };
 
@@ -409,7 +434,6 @@ function App() {
                 </Dropdown>
               </nav>
 
-
               {/* Main Content Area */}
               <div className="content-area">
                 <Routes>
@@ -434,8 +458,45 @@ function App() {
           </div>
         )}
       </div>
+
+      {/* Notification Modal */}
+      <Modal show={showNotification} onHide={() => setShowNotification(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Thông báo</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Ví Phantom đã được kết nối thành công!</Modal.Body>
+      </Modal>
+
+      {/* Signing Modal */}
+      <Modal show={showSigningModal} onHide={() => setShowSigningModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Ký tin nhắn</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Nhập tin nhắn để ký</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Nhập tin nhắn"
+                value={messageToSign}
+                onChange={(e) => setMessageToSign(e.target.value)}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSigningModal(false)}>
+            Hủy
+          </Button>
+          <Button variant="primary" onClick={signMessage}>
+            Ký tin nhắn
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Router>
   );
 }
 
 export default App;
+
