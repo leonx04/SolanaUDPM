@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { Alert, Button, Card, Carousel, Form, InputGroup, Modal, Spinner } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import { apiKey } from '../api';
 // Pagination component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
@@ -352,7 +353,7 @@ const MarketplaceHome = ({ referenceId }) => {
     }
 
     return (
-      <div className="row row-cols-1 row-cols-md-3 g-4 mb-4">
+      <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 mb-4">
         {items.map((itemData) => {
           const item = itemData.item;
           return (
@@ -368,7 +369,7 @@ const MarketplaceHome = ({ referenceId }) => {
                 <Card.Body className="d-flex flex-column">
                   <Card.Title className="fw-bold mb-2">{item.name}</Card.Title>
                   <Card.Text className="text-muted small mb-3">
-                    Tác giả: {item.owner.referenceId}
+                  Tác giả: <Link className="text-decoration-none badge badge-success" to={`/account/${item.owner.referenceId}`}> {item.owner.referenceId}</Link>
                   </Card.Text>
                   <div className="mt-auto d-flex justify-content-between align-items-center">
                     <span className="badge bg-primary rounded-pill px-3 py-2">
@@ -406,7 +407,7 @@ const MarketplaceHome = ({ referenceId }) => {
             <img
               className="d-block w-100"
               src="https://static.vecteezy.com/system/resources/previews/017/797/790/non_2x/banner-for-nft-industry-one-point-perspective-concept-with-terms-of-web3-vector.jpg"
-              alt="NFT Collection"
+              alt="Bộ sưu tập NFT"
             />
             <Carousel.Caption>
               <h3>Bộ sưu tập NFT độc quyền</h3>
@@ -417,7 +418,7 @@ const MarketplaceHome = ({ referenceId }) => {
             <img
               className="d-block w-100"
               src="https://static.vecteezy.com/system/resources/previews/023/325/782/non_2x/futuristic-digital-technology-metaverse-nft-virtual-reality-concept-young-girl-wearing-vr-virtual-reality-goggle-experiencing-virtual-world-glitch-effect-vector.jpg"
-              alt="Metaverse Experience"
+              alt="Trải nghiệm Metaverse"
             />
             <Carousel.Caption>
               <h3>Trải nghiệm Metaverse</h3>

@@ -1037,3 +1037,124 @@
   text-decoration: underline;
 }
 
+/* Profile Styles */
+.profile-container {
+  background-color: var(--light-bg-primary);
+}
+
+.dark-theme .profile-container {
+  background-color: var(--dark-bg-primary);
+}
+
+.cover-image {
+  border-bottom: 1px solid var(--light-border-color);
+}
+
+.dark-theme .cover-image {
+  border-bottom: 1px solid var(--dark-border-color);
+}
+
+.profile-info {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
+/* Tab Navigation */
+.nav-tabs {
+  border-bottom: 1px solid var(--light-border-color);
+}
+
+.dark-theme .nav-tabs {
+  border-bottom: 1px solid var(--dark-border-color);
+}
+
+.nav-tabs .nav-link {
+  color: var(--light-text-secondary);
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 1rem 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.dark-theme .nav-tabs .nav-link {
+  color: var(--dark-text-secondary);
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--light-text-primary);
+  border-color: transparent;
+}
+
+.dark-theme .nav-tabs .nav-link:hover {
+  color: var(--dark-text-primary);
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--primary-color);
+  background-color: transparent;
+  border-bottom-color: var(--primary-color);
+}
+
+.dark-theme .nav-tabs .nav-link.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* Social Links */
+.social-links a {
+  transition: transform 0.2s ease;
+}
+
+.social-links a:hover {
+  transform: translateY(-2px);
+}
+
+/* Edit Modal */
+.cover-preview {
+  transition: all 0.3s ease;
+}
+
+.cover-preview:hover {
+  opacity: 0.9;
+}
+
+/* Profile Image */
+.profile-image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.profile-image-container .edit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.profile-image-container:hover .edit-overlay {
+  opacity: 1;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .profile-info {
+    padding-top: 0.5rem;
+  }
+  
+  .nav-tabs .nav-link {
+    padding: 0.75rem 1rem;
+  }
+  
+  .cover-image {
+    height: 200px !important;
+  }
+}
+

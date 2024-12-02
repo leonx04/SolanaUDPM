@@ -9,14 +9,14 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Dropdown } from 'react-bootstrap';
-import { Navigate, NavLink, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Navigate, NavLink, Route, BrowserRouter as Router, Routes, Link } from "react-router-dom";
 import './App.css';
 import AuthForm from "./components/AuthForm";
 import Home from "./components/Home";
 import MyNfts from "./components/MyNfts";
-import User from "./components/User";
 import PurchaseHistory from "./components/PurchaseHistory";
-
+import AccountManagement from "./components/AccountManagement";
+import { UserContext } from './contexts/UserContext';
 
 // Địa chỉ token USDC chính thức trên Solana devnet
 const USDC_MINT_ADDRESS = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
@@ -87,14 +87,11 @@ function App() {
     }
   }, [walletAddress, connection]);
 
-
-
   // Theo dõi theme và áp dụng class
   useEffect(() => {
     document.body.classList.remove('light-theme', 'dark-theme');
     document.body.classList.add(`${theme}-theme`);
   }, [theme]);
-
 
   useEffect(() => {
     if (walletAddress) {
@@ -242,198 +239,209 @@ function App() {
 
   return (
     <Router>
-      <div className={`app-container ${theme}-theme`}>
-        {!isLoggedIn ? (
-          <div className="auth-container">
-            <AuthForm setIsLoggedIn={setIsLoggedIn} setUserData={setUserData} />
-          </div>
-        ) : (
-          <div className="dashboard-container">
-            {/* Overlay for mobile */}
-            {isMobile && isSidebarOpen && (
-              <div className="sidebar-overlay" onClick={toggleSidebar}></div>
-            )}
-
-            {/* Sidebar */}
-            <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
-              <div className="sidebar-header">
-                <h3 className="mb-0 p-3 text-white">
-                  <i className="bi bi-palette me-2"></i>
-                  Solana UDPM 11
-                </h3>
-                {isMobile && (
-                  <button
-                    className="btn btn-link close-sidebar"
-                    onClick={toggleSidebar}
-                  >
-                    <i className="bi bi-x-lg text-white"></i>
-                  </button>
-                )}
-              </div>
-
-              <div className="sidebar-content">
-                <div className="nav flex-column">
-                  <NavLink
-                    to="/home"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`}
-                    onClick={closeSidebarOnMobile}
-                  >
-                    <i className="bi bi-house-door me-2"></i>
-                    Trang chủ
-                  </NavLink>
-                  <NavLink
-                    to="/my-nfts"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`}
-                    onClick={closeSidebarOnMobile}
-                  >
-                    <i className="bi bi-collection me-2"></i>
-                    NFT của tôi
-                  </NavLink>
-                  <NavLink
-                    to="/purchase-history"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`}
-                    onClick={closeSidebarOnMobile}
-                  >
-                    <i className="bi bi-journal-text me-2"></i>
-                    Giao dịch
-                  </NavLink>
-                </div>
-              </div>
-
-              <div className="sidebar-footer">
-                <div className={`wallet-status ${isPhantomInstalled ? 'text-success' : 'text-warning'}`}>
-                  <i className={`bi bi-circle-fill me-2`}></i>
-                  <span className="text-white">{isPhantomInstalled ? 'Phantom đã cài đặt' : 'Phantom chưa cài đặt'}</span>
-                </div>
-              </div>
+      <UserContext.Provider value={[userData, setUserData]}>
+        <div className={`app-container ${theme}-theme`}>
+          {!isLoggedIn ? (
+            <div className="auth-container">
+              <AuthForm setIsLoggedIn={setIsLoggedIn} setUserData={setUserData} />
             </div>
+          ) : (
+            <div className="dashboard-container">
+              {/* Overlay for mobile */}
+              {isMobile && isSidebarOpen && (
+                <div className="sidebar-overlay" onClick={toggleSidebar}></div>
+              )}
 
-            {/* Main Content */}
-            <div className={`main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
-              {/* Top Navigation */}
-              <nav className="top-nav">
-                <div className="d-flex align-items-center w-100">
-                  {/* Nút mở sidebar */}
-                  <button
-                    className="btn btn-link menu-toggle"
-                    onClick={toggleSidebar}
-                  >
-                    <i className="bi bi-list fs-4"></i>
-                  </button>
+              {/* Sidebar */}
+              <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
+                <div className="sidebar-header">
+                  <h3 className="mb-0 p-3 text-white">
+                    <i className="bi bi-palette me-2"></i>
+                    Solana UDPM 11
+                  </h3>
+                  {isMobile && (
+                    <button
+                      className="btn btn-link close-sidebar"
+                      onClick={toggleSidebar}
+                    >
+                      <i className="bi bi-x-lg text-white"></i>
+                    </button>
+                  )}
+                </div>
 
-                  {/* Nút đổi theme */}
-                  <button
-                    className="btn btn-link theme-toggle ms-auto"
-                    onClick={toggleTheme}
-                    title="Chuyển chế độ giao diện"
-                  >
-                    {theme === 'light' ? (
-                      <i className="bi bi-moon-stars text-dark"></i>
-                    ) : (
-                      <i className="bi bi-brightness-high text-warning"></i>
-                    )}
-                  </button>
-
-                  {/* Hiển thị ví */}
-                  <div className="wallet-connection-container d-flex align-items-center ms-3">
-                    {!walletAddress ? (
-                      <Button
-                        variant="outline-primary"
-                        onClick={connectWallet}
-                        disabled={walletLoading}
-                      >
-                        {walletLoading ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            Đang kết nối...
-                          </>
-                        ) : (
-                          'Connect Phantom'
-                        )}
-                      </Button>
-                    ) : (
-                      <div className="d-flex flex-column">
-                        <div className="d-flex align-items-center">
-                          <span className="me-2 text-muted">
-                            SOL:
-                            <span className="fw-bold text-dark ms-1">
-                              {walletBalance.toFixed(2)} SOL
-                            </span>
-                          </span>
-                          <span className="me-2 text-muted">
-                            USDC:
-                            <span className="fw-bold text-dark ms-1">
-                              {usdcBalance !== null ? usdcBalance.toFixed(2) : 'Đang tải...'} USDC
-                            </span>
-                          </span>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={disconnectWallet}
-                            className="ms-2"
-                          >
-                            Stop
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    {walletError && (
-                      <div className="alert alert-danger mt-2 mb-0 py-1 px-2" role="alert">
-                        {walletError}
-                      </div>
-                    )}
+                <div className="sidebar-content">
+                  <div className="nav flex-column">
+                    <NavLink
+                      to="/home"
+                      className={({ isActive }) =>
+                        `nav-link ${isActive ? 'active' : ''}`}
+                      onClick={closeSidebarOnMobile}
+                    >
+                      <i className="bi bi-house-door me-2"></i>
+                      Trang chủ
+                    </NavLink>
+                    <NavLink
+                      to="/my-nfts"
+                      className={({ isActive }) =>
+                        `nav-link ${isActive ? 'active' : ''}`}
+                      onClick={closeSidebarOnMobile}
+                    >
+                      <i className="bi bi-collection me-2"></i>
+                      NFT của tôi
+                    </NavLink>
+                    <NavLink
+                      to="/purchase-history"
+                      className={({ isActive }) =>
+                        `nav-link ${isActive ? 'active' : ''}`}
+                      onClick={closeSidebarOnMobile}
+                    >
+                      <i className="bi bi-journal-text me-2"></i>
+                      Giao dịch
+                    </NavLink>
+                    <NavLink
+                      to={`/account/${userData?.referenceId}`}
+                      className={({ isActive }) =>
+                        `nav-link ${isActive ? 'active' : ''}`}
+                      onClick={closeSidebarOnMobile}
+                    >
+                      <i className="bi bi-person-circle me-2"></i>
+                      Account
+                    </NavLink>
                   </div>
                 </div>
 
-                {/* Dropdown người dùng */}
-                <Dropdown className="user-dropdown">
-                  <Dropdown.Toggle
-                    variant="link"
-                    id="user-dropdown"
-                    className="theme-text d-flex align-items-center text-decoration-none"
-                  >
-                    <i className="bi bi-person-circle me-2"></i>
-                    {userData?.email}
-                  </Dropdown.Toggle>
+                <div className="sidebar-footer">
+                  <div className={`wallet-status ${isPhantomInstalled ? 'text-success' : 'text-warning'}`}>
+                    <i className={`bi bi-circle-fill me-2`}></i>
+                    <span className="text-white">{isPhantomInstalled ? 'Phantom đã cài đặt' : 'Phantom chưa cài đặt'}</span>
+                  </div>
+                </div>
+              </div>
 
-                  <Dropdown.Menu>
-                    <Dropdown.Divider />
-                    <Dropdown.Item onClick={handleLogout} className="text-danger">
-                      <i className="bi bi-box-arrow-right me-2"></i>
-                      Đăng xuất
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-              </nav>
+              {/* Main Content */}
+              <div className={`main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
+                {/* Top Navigation */}
+                <nav className="top-nav">
+                  <div className="d-flex align-items-center w-100">
+                    {/* Nút mở sidebar */}
+                    <button
+                      className="btn btn-link menu-toggle"
+                      onClick={toggleSidebar}
+                    >
+                      <i className="bi bi-list fs-4"></i>
+                    </button>
 
+                    {/* Nút đổi theme */}
+                    <button
+                      className="btn btn-link theme-toggle ms-auto"
+                      onClick={toggleTheme}
+                      title="Chuyển chế độ giao diện"
+                    >
+                      {theme === 'light' ? (
+                        <i className="bi bi-moon-stars text-dark"></i>
+                      ) : (
+                        <i className="bi bi-brightness-high text-warning"></i>
+                      )}
+                    </button>
 
-              {/* Main Content Area */}
-              <div className="content-area ms-4">
-                <Routes>
-                  <Route path="/" element={<Navigate to="/home" replace />} />
-                  <Route path="/home" element={<Home referenceId={userData?.referenceId} />} />
-                  <Route path="/my-nfts" element={<MyNfts referenceId={userData?.referenceId} />} />
-                  <Route
-                    path="/purchase-history" element={<PurchaseHistory referenceId={userData?.referenceId} />}
-                  />
-                  <Route
-                    path="/user"
-                    element={
-                      <User
-                        referenceId={userData?.referenceId}
-                        email={userData?.email}
-                      />
-                    }
-                  />
-                </Routes>
+                    {/* Hiển thị ví */}
+                    <div className="wallet-connection-container d-flex align-items-center ms-3">
+                      {!walletAddress ? (
+                        <Button
+                          variant="outline-primary"
+                          onClick={connectWallet}
+                          disabled={walletLoading}
+                        >
+                          {walletLoading ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              Đang kết nối...
+                            </>
+                          ) : (
+                            'Connect Phantom'
+                          )}
+                        </Button>
+                      ) : (
+                        <div className="d-flex flex-column">
+                          <div className="d-flex align-items-center">
+                            <span className="me-2 text-muted">
+                              SOL:
+                              <span className="fw-bold text-dark ms-1">
+                                {walletBalance.toFixed(2)} SOL
+                              </span>
+                            </span>
+                            <span className="me-2 text-muted">
+                              USDC:
+                              <span className="fw-bold text-dark ms-1">
+                                {usdcBalance !== null ? usdcBalance.toFixed(2) : 'Đang tải...'} USDC
+                              </span>
+                            </span>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={disconnectWallet}
+                              className="ms-2"
+                            >
+                              Stop
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      {walletError && (
+                        <div className="alert alert-danger mt-2 mb-0 py-1 px-2" role="alert">
+                          {walletError}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Dropdown người dùng */}
+                  <Dropdown className="user-dropdown">
+                    <Dropdown.Toggle
+                      variant="link"
+                      id="user-dropdown"
+                      className="theme-text d-flex align-items-center text-decoration-none"
+                    >
+                      <i className="bi bi-person-circle me-2"></i>
+                      {userData?.email}
+                    </Dropdown.Toggle>
+
+                    <Dropdown.Menu>
+                      <Dropdown.Item as={Link} to="/account">
+                        <i className="bi bi-person-circle me-2"></i>
+                        Manage Account
+                      </Dropdown.Item>
+                      <Dropdown.Divider />
+                      <Dropdown.Item onClick={handleLogout} className="text-danger">
+                        <i className="bi bi-box-arrow-right me-2"></i>
+                        Đăng xuất
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                </nav>
+
+                {/* Main Content Area */}
+                <div className="content-area ms-4">
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/home" replace />} />
+                    <Route path="/home" element={<Home referenceId={userData?.referenceId} />} />
+                    <Route path="/my-nfts" element={<MyNfts referenceId={userData?.referenceId} />} />
+                    <Route path="/purchase-history" element={<PurchaseHistory referenceId={userData?.referenceId} />} />
+                    <Route 
+                      path="/account" 
+                      element={<Navigate to={`/account/${userData?.referenceId}`} replace />} 
+                    />
+                    <Route 
+                      path="/account/:referenceId" 
+                      element={<AccountManagement />} 
+                    />
+                  </Routes>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </UserContext.Provider>
     </Router>
   );
 }
