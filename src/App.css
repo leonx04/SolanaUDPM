@@ -7,11 +7,26 @@
   --secondary-color: #3f37c9;
   --success-color: #4caf50;
   --warning-color: #f9a825;
+  /* Light Theme */
+  --light-bg-primary: #f8f9fa;
+  --light-bg-secondary: #ffffff;
+  --light-text-primary: #333;
+  --light-text-secondary: #6c757d;
+  --light-border-color: #dee2e6;
+
+  /* Dark Theme */
+  --dark-bg-primary: #121212;
+  --dark-bg-secondary: #1e1e1e;
+  --dark-text-primary: #e0e0e0;
+  --dark-text-secondary: #a0a0a0;
+  --dark-border-color: #444;
 }
 
 /* Layout */
 .app-container {
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .auth-container {
@@ -21,6 +36,7 @@
 
 .dashboard-container {
   display: flex;
+  width: 100%;
   min-height: 100vh;
   position: relative;
 }
@@ -38,20 +54,22 @@
 
 /* Sidebar */
 .sidebar {
-  width: var(--sidebar-width);
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  width: 280px;
+  min-width: 280px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background-color: #1a1a1a;
   color: white;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
-  position: fixed;
-  height: 100vh;
   z-index: 1000;
-  left: 0;
 }
 
 .sidebar.closed {
-  left: calc(-1 * var(--sidebar-width));
+  transform: translateX(-100%);
 }
 
 .sidebar-header {
@@ -96,6 +114,23 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.sidebar .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: white;
+  transition: width 0.3s ease;
+}
+
+.sidebar .nav-link:hover::after {
+  width: 100%;
 }
 
 .sidebar .nav-link:hover {
@@ -117,9 +152,11 @@
 /* Main Content */
 .main-content {
   flex: 1;
-  margin-left: var(--sidebar-width);
-  transition: all 0.3s ease;
-  width: 100%;
+  margin-left: 280px;
+  min-width: 0;
+  transition: margin-left 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .main-content.expanded {
@@ -128,10 +165,10 @@
 
 /* Top Navigation */
 .top-nav {
-  height: var(--top-nav-height);
+  height: 60px;
+  padding: 0 1rem;
   background: white;
   border-bottom: 1px solid #eee;
-  padding: 0 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -161,9 +198,10 @@
 
 /* Content Area */
 .content-area {
-  padding: 2rem;
-  background-color: #f8f9fa;
-  min-height: calc(100vh - var(--top-nav-height));
+  padding: 1.5rem;
+  flex: 1;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 /* Mobile Responsive */
@@ -220,82 +258,34 @@
   white-space: nowrap;
 }
 
-/* App container và Dashboard */
-.app-container {
-  min-height: 100vh;
-  width: 100%;
-  overflow-x: hidden;
-}
-
-.dashboard-container {
-  display: flex;
-  width: 100%;
-  min-height: 100vh;
-  position: relative;
-}
-
-/* Sidebar styles */
-.sidebar {
-  width: 280px;
-  min-width: 280px;
-  height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  background-color: #1a1a1a;
-  color: white;
-  transition: transform 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  z-index: 1000;
-}
-
-.sidebar.closed {
-  transform: translateX(-100%);
-}
-
-/* Main content area */
-.main-content {
-  flex: 1;
-  margin-left: 280px;
-  min-width: 0;
-  /* Quan trọng để tránh overflow */
-  transition: margin-left 0.3s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-.main-content.expanded {
-  margin-left: 0;
-}
-
-/* Top navigation */
-.top-nav {
-  height: 60px;
-  padding: 0 1rem;
-  background: white;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 900;
-}
-
-/* Content area */
-.content-area {
-  padding: 1.5rem;
-  flex: 1;
-  overflow-x: hidden;
-  min-width: 0;
-  /* Quan trọng để tránh overflow */
-}
-
 /* Card và Table container */
 .card {
   overflow: hidden;
   margin-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
+  border: none;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.light-theme .card {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.dark-theme .card {
+  background: rgba(30, 30, 30, 0.7);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
 }
 
 .table-responsive {
@@ -308,7 +298,6 @@
 /* Table styles */
 .mobile-table-wrapper {
   min-width: 800px;
-  /* Minimum width for table content */
 }
 
 /* Responsive Overlay */
@@ -399,24 +388,6 @@
   }
 }
 
-/* Giữ nguyên các CSS hiện tại và thêm đoạn sau vào cuối file */
-
-/* Theme Variables */
-:root {
-  /* Light Theme */
-  --light-bg-primary: #f8f9fa;
-  --light-bg-secondary: #ffffff;
-  --light-text-primary: #333;
-  --light-text-secondary: #6c757d;
-  --light-border-color: #dee2e6;
-
-  /* Dark Theme */
-  --dark-bg-primary: #121212;
-  --dark-bg-secondary: #1e1e1e;
-  --dark-text-primary: #e0e0e0;
-  --dark-text-secondary: #a0a0a0;
-  --dark-border-color: #444;
-}
 
 /* Light Theme */
 .light-theme {
@@ -432,15 +403,25 @@
 .light-theme .top-nav {
   background-color: var(--light-bg-secondary);
   border-bottom-color: var(--light-border-color);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .light-theme .sidebar {
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
+  background: linear-gradient(135deg,
+      rgba(67, 97, 238, 0.9),
+      rgba(63, 55, 201, 0.9));
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .light-theme .content-area {
   background-color: var(--light-bg-primary);
+  background: linear-gradient(135deg, rgba(240, 248, 255, 0.8), rgba(255, 255, 255, 0.7));
+  background-attachment: fixed;
 }
 
 .light-theme .card {
@@ -466,15 +447,25 @@
 .dark-theme .top-nav {
   background-color: var(--dark-bg-secondary);
   border-bottom-color: var(--dark-border-color);
+  background: rgba(30, 30, 30, 0.7);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 .dark-theme .sidebar {
   background: linear-gradient(135deg, #2c3e50, #34495e);
   color: #ecf0f1;
+  background: linear-gradient(135deg,
+      rgba(44, 62, 80, 0.9),
+      rgba(52, 73, 94, 0.9));
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .dark-theme .content-area {
   background-color: var(--dark-bg-primary);
+  background: linear-gradient(135deg, rgba(18, 18, 18, 0.9), rgba(30, 30, 30, 0.7));
+  background-attachment: fixed;
 }
 
 .dark-theme .card {
@@ -657,17 +648,14 @@
 /* Text color class */
 .theme-text {
   color: var(--light-text-primary);
-  /* Mặc định màu sáng */
 }
 
 .light-theme .theme-text {
   color: var(--light-text-primary);
-  /* Màu sáng */
 }
 
 .dark-theme .theme-text {
   color: var(--dark-text-primary);
-  /* Màu tối */
 }
 
 /* Đảm bảo các phần tử khác sẽ tự động thay đổi màu sắc */
@@ -702,81 +690,6 @@
   background-attachment: fixed;
 }
 
-/* Enhanced Card Styles with Blur and Shadow */
-.card {
-  position: relative;
-  overflow: hidden;
-  border: none;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.light-theme .card {
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.dark-theme .card {
-  background: rgba(30, 30, 30, 0.7);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-}
-
-/* Glassmorphism Effect for Top Navigation */
-.light-theme .top-nav {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(15px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.dark-theme .top-nav {
-  background: rgba(30, 30, 30, 0.7);
-  backdrop-filter: blur(15px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-/* Soft Gradient Borders for Interactive Elements */
-.btn,
-.form-control,
-.dropdown-toggle {
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.light-theme .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  border: none;
-}
-
-.dark-theme .btn-primary {
-  background: linear-gradient(135deg, #4361ee, #3f37c9);
-  border: none;
-}
-
-/* Enhanced Sidebar with Glassmorphism */
-.light-theme .sidebar {
-  background: linear-gradient(135deg,
-      rgba(67, 97, 238, 0.9),
-      rgba(63, 55, 201, 0.9));
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.dark-theme .sidebar {
-  background: linear-gradient(135deg,
-      rgba(44, 62, 80, 0.9),
-      rgba(52, 73, 94, 0.9));
-  backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
 
 /* Soft Scroll Bar */
 ::-webkit-scrollbar {
@@ -798,25 +711,6 @@
 }
 
 /* Animated Hover Effects */
-.sidebar .nav-link {
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.sidebar .nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: white;
-  transition: width 0.3s ease;
-}
-
-.sidebar .nav-link:hover::after {
-  width: 100%;
-}
 
 /* NFT-Specific Styling Hints */
 .nft-card {
@@ -842,58 +736,42 @@
 
 .zoomed-image:hover {
   transform: scale(1.1);
-  /* Phóng to khi hover */
 }
 
 
 /* Hiệu ứng hover cho dòng khi di chuột vào */
 .table tbody tr:hover {
   background-color: #f1f1f1;
-  /* Thay đổi màu nền khi hover vào dòng */
   cursor: pointer;
-  /* Thêm con trỏ "pointer" để hiển thị như một liên kết */
 }
 
 .table-container {
   overflow-x: auto;
-  /* Bật cuộn ngang khi nội dung vượt quá chiều rộng */
   -webkit-overflow-scrolling: touch;
-  /* Tăng trải nghiệm cuộn mượt trên thiết bị cảm ứng */
 }
 
 .table {
   width: 100%;
-  /* Bảng chiếm toàn bộ chiều rộng của container */
   max-width: 100%;
-  /* Giới hạn chiều rộng tối đa */
   border-collapse: collapse;
-  /* Loại bỏ khoảng cách giữa các ô */
 }
 
 .table th,
 .table td {
   text-align: left;
-  /* Canh trái nội dung */
   padding: 0.75rem;
-  /* Khoảng cách trong ô */
   border: 1px solid #dee2e6;
-  /* Đường viền */
 }
 
 .table th {
   background-color: #f8f9fa;
-  /* Màu nền tiêu đề */
   font-weight: bold;
-  /* In đậm tiêu đề */
 }
 
 .img-fluid.rounded-banner {
   height: 400px;
-  /* Hoặc giá trị phù hợp với thiết kế */
   object-fit: cover;
-  /* Đảm bảo hình ảnh không bị méo */
   border-radius: 15px;
-  /* Tạo bo góc mềm mại */
 }
 
 .carousel-item-container {
@@ -907,7 +785,6 @@
   transform: translate(-50%, -50%);
   text-align: center;
   background-color: rgba(0, 0, 0, 0.5);
-  /* Nền mờ */
   padding: 20px;
   border-radius: 10px;
 }
@@ -926,105 +803,17 @@
 
 /* Modal Base Styling */
 .modal-content {
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease-in-out;
-  backdrop-filter: blur(15px);
-}
-
-.modal-content .modal-header,
-.modal-content .modal-footer {
-  background: rgba(0, 0, 0, 0.1);
-  border: none;
-}
-
-/* Modal Animation */
-.modal.fade .modal-dialog {
-  transition: transform 0.3s ease-out;
-}
-
-.modal.show .modal-dialog {
-  transform: translateY(0);
-}
-
-.modal-dialog {
-  max-width: 90%;
-}
-
-@media (min-width: 576px) {
-  .modal-dialog {
-    max-width: 500px;
-  }
-}
-
-@media (min-width: 992px) {
-  .modal-dialog.modal-lg {
-    max-width: 800px;
-  }
-}
-
-/* --- Background Gradient for Content --- */
-
-/* Light and Dark Gradient Background for Content */
-.light-theme .content-area {
-  background: linear-gradient(135deg, rgba(240, 248, 255, 0.8), rgba(255, 255, 255, 0.7));
-  background-attachment: fixed;
-}
-
-.dark-theme .content-area {
-  background: linear-gradient(135deg, rgba(18, 18, 18, 0.9), rgba(30, 30, 30, 0.7));
-  background-attachment: fixed;
-}
-
-/* General Gradient Enhancements */
-.gradient-background {
-  background: linear-gradient(135deg, #1f3c72, #2a5298, #4ca1af);
-  color: #fff;
-  padding: 3rem;
-  border-radius: 12px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
-}
-
-/* Smooth Gradient Transitions */
-@keyframes gradient-animation {
-  0% {
-    background: linear-gradient(135deg, #1f3c72, #2a5298, #4ca1af);
-  }
-
-  50% {
-    background: linear-gradient(135deg, #4ca1af, #2a5298, #1f3c72);
-  }
-
-  100% {
-    background: linear-gradient(135deg, #1f3c72, #2a5298, #4ca1af);
-  }
-}
-
-.gradient-background {
-  animation: gradient-animation 15s ease infinite;
-}
-
-/* Modal Base Styling */
-.modal-content {
   background-color: rgba(255, 255, 255, 0.9);
-  /* Màu nền nhẹ nhàng */
   border-radius: 15px;
-  /* Bo góc mềm mại */
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  /* Đổ bóng tạo chiều sâu */
   transition: transform 0.3s ease, opacity 0.3s ease;
   backdrop-filter: blur(10px);
-  /* Hiệu ứng mờ nền */
   border: 1px solid rgba(255, 255, 255, 0.2);
-  /* Đường viền tinh tế */
 }
 
 .modal-header,
 .modal-footer {
   background-color: rgba(240, 240, 240, 0.9);
-  /* Nền hơi khác biệt */
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   text-align: center;
@@ -1082,9 +871,7 @@
 /* Backdrop Styling */
 .modal-backdrop {
   background-color: rgba(0, 0, 0, 0.6);
-  /* Mờ nền */
   backdrop-filter: blur(5px);
-  /* Mờ nền với độ sâu */
 }
 .badge-success{
   background-color: rgba(6, 110, 14, 0.6);
@@ -1093,9 +880,9 @@
 .carousel img {
   object-fit: cover;
   width: 100%;
-  height: 600px; /* Chiều cao cố định cho tất cả ảnh */
-  border-radius: 20px; /* Bo tròn góc mềm mại */
-  transition: transform 0.3s ease-in-out; /* Hiệu ứng nổi lên */
+  height: 600px;
+  border-radius: 20px;
+  transition: transform 0.3s ease-in-out;
 }
 
 /* Hiệu ứng nổi lên khi hover ảnh */
@@ -1105,24 +892,269 @@
 
 /* Styling container của carousel */
 .carousel.container {
-  background-color: #f8f9fa; /* Màu nền nhạt */
+  background-color: #f8f9fa;
   padding: 20px;
-  border-radius: 40px; /* Bo tròn mềm mại cho container */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Hiệu ứng bóng cho container */
-  overflow: hidden; /* Đảm bảo bo tròn góc container không bị ảnh hưởng */
+  border-radius: 40px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
 /* Hiệu ứng chuyển động trượt items */
 .carousel .carousel-item {
-  border-radius: 20px; /* Bo góc tròn cho từng item */
+  border-radius: 20px;
   overflow: hidden;
-  transition: transform 0.3s ease-in-out; /* Hiệu ứng mượt khi trượt */
+  transition: transform 0.3s ease-in-out;
 }
 
 /* Căn chỉnh caption bên trong */
 .carousel-caption {
-  background-color: rgba(0, 0, 0, 0.6); /* Nền mờ tối cho caption */
-  border-radius: 10px; /* Bo góc caption */
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 10px;
   padding: 15px;
   color: #fff;
 }
+
+/* Soft Gradient Borders for Interactive Elements */
+.btn,
+.form-control,
+.dropdown-toggle {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.light-theme .btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border: none;
+}
+
+.dark-theme .btn-primary {
+  background: linear-gradient(135deg, #4361ee, #3f37c9);
+  border: none;
+}
+
+/* General Gradient Enhancements */
+.gradient-background {
+  background: linear-gradient(135deg, #1f3c72, #2a5298, #4ca1af);
+  color: #fff;
+  padding: 3rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+/* Smooth Gradient Transitions */
+@keyframes gradient-animation {
+  0% {
+    background: linear-gradient(135deg, #1f3c72, #2a5298, #4ca1af);
+  }
+
+  50% {
+    background: linear-gradient(135deg, #4ca1af, #2a5298, #1f3c72);
+  }
+
+  100% {
+    background: linear-gradient(135deg, #1f3c72, #2a5298, #4ca1af);
+  }
+}
+
+.gradient-background {
+  animation: gradient-animation 15s ease infinite;
+}
+
+
+/* AuthForm Styles */
+.auth-form-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.auth-form-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.auth-form-subtitle {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.auth-form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.auth-form-button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #ffffff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.auth-form-button:hover {
+  background-color: #0056b3;
+}
+
+.auth-form-toggle {
+  font-size: 0.875rem;
+  color: #6c757d;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.auth-form-toggle-link {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.auth-form-toggle-link:hover {
+  text-decoration: underline;
+}
+
+/* Profile Styles */
+.profile-container {
+  background-color: var(--light-bg-primary);
+}
+
+.dark-theme .profile-container {
+  background-color: var(--dark-bg-primary);
+}
+
+.cover-image {
+  border-bottom: 1px solid var(--light-border-color);
+}
+
+.dark-theme .cover-image {
+  border-bottom: 1px solid var(--dark-border-color);
+}
+
+.profile-info {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
+/* Tab Navigation */
+.nav-tabs {
+  border-bottom: 1px solid var(--light-border-color);
+}
+
+.dark-theme .nav-tabs {
+  border-bottom: 1px solid var(--dark-border-color);
+}
+
+.nav-tabs .nav-link {
+  color: var(--light-text-secondary);
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 1rem 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.dark-theme .nav-tabs .nav-link {
+  color: var(--dark-text-secondary);
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--light-text-primary);
+  border-color: transparent;
+}
+
+.dark-theme .nav-tabs .nav-link:hover {
+  color: var(--dark-text-primary);
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--primary-color);
+  background-color: transparent;
+  border-bottom-color: var(--primary-color);
+}
+
+.dark-theme .nav-tabs .nav-link.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* Social Links */
+.social-links a {
+  transition: transform 0.2s ease;
+}
+
+.social-links a:hover {
+  transform: translateY(-2px);
+}
+
+/* Edit Modal */
+.cover-preview {
+  transition: all 0.3s ease;
+}
+
+.cover-preview:hover {
+  opacity: 0.9;
+}
+
+/* Profile Image */
+.profile-image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.profile-image-container .edit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.profile-image-container:hover .edit-overlay {
+  opacity: 1;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .profile-info {
+    padding-top: 0.5rem;
+  }
+  
+  .nav-tabs .nav-link {
+    padding: 0.75rem 1rem;
+  }
+  
+  .cover-image {
+    height: 200px !important;
+  }
+}
+

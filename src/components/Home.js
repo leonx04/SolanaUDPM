@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { Alert, Button, Card, Carousel, Form, InputGroup, Modal, Spinner } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import { apiKey } from '../api';
 // Pagination component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
@@ -100,7 +101,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     </nav>
   );
 };
-
 // Action types for reducer
 const ACTIONS = {
   FETCH_START: 'FETCH_START',
@@ -137,7 +137,6 @@ const reducer = (state, action) => {
   }
 };
 
-// Main MarketplaceHome component
 const MarketplaceHome = ({ referenceId }) => {
   const [state, dispatch] = useReducer(reducer, {
     allItems: [],
@@ -151,7 +150,7 @@ const MarketplaceHome = ({ referenceId }) => {
     priceRange: { min: '', max: '' },
     searchQuery: '',
     currentPage: 1,
-    itemsPerPage: 10,
+    itemsPerPage: 6, // Updated default value
   });
 
   const productSectionRef = useRef(null);
@@ -161,7 +160,7 @@ const MarketplaceHome = ({ referenceId }) => {
     return state.allItems.filter(itemData =>
       itemData.type === 'UniqueAsset' &&
       itemData.item.priceCents !== null &&
-      itemData.item.priceCents > 0 && // Add this condition
+      itemData.item.priceCents > 0 &&
       itemData.item.owner.referenceId !== referenceId &&
       itemData.item.name.toLowerCase().includes(state.searchQuery.toLowerCase()) &&
       (state.priceRange.min === '' || itemData.item.priceCents >= state.priceRange.min * 100) &&
@@ -178,18 +177,17 @@ const MarketplaceHome = ({ referenceId }) => {
 
   const featuredItems = useMemo(() => {
     const sortedItems = state.allItems
-      .filter(itemData => itemData.item.priceCents > 0) // Add this filter
+      .filter(itemData => 
+        itemData.item.priceCents > 0 && 
+        itemData.item.owner.referenceId !== referenceId 
+      )
       .sort((a, b) => {
-        // Sort by price (lowest first)
         const priceDiff = a.item.priceCents - b.item.priceCents;
         if (priceDiff !== 0) return priceDiff;
-        
-        // If prices are equal, sort by date (newest first)
         return new Date(b.item.createdAt) - new Date(a.item.createdAt);
       });
-    
     return sortedItems.slice(0, 3);
-  }, [state.allItems]);
+  }, [state.allItems, referenceId]);
 
   const paginatedItems = useMemo(() => {
     const startIndex = (state.currentPage - 1) * state.itemsPerPage;
@@ -197,7 +195,6 @@ const MarketplaceHome = ({ referenceId }) => {
     return filteredItems.slice(startIndex, endIndex);
   }, [filteredItems, state.currentPage, state.itemsPerPage]);
 
-  const totalPages = Math.ceil(filteredItems.length / state.itemsPerPage);
 
   const fetchAllItems = useCallback(async (signal) => {
     dispatch({ type: ACTIONS.FETCH_START });
@@ -356,7 +353,7 @@ const MarketplaceHome = ({ referenceId }) => {
     }
 
     return (
-      <div className="row row-cols-1 row-cols-md-3 g-4 mb-4">
+      <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 mb-4">
         {items.map((itemData) => {
           const item = itemData.item;
           return (
@@ -372,7 +369,7 @@ const MarketplaceHome = ({ referenceId }) => {
                 <Card.Body className="d-flex flex-column">
                   <Card.Title className="fw-bold mb-2">{item.name}</Card.Title>
                   <Card.Text className="text-muted small mb-3">
-                    Tác giả: {item.owner.referenceId}
+                  Tác giả: <Link className="text-decoration-none badge badge-success" to={`/account/${item.owner.referenceId}`}> {item.owner.referenceId}</Link>
                   </Card.Text>
                   <div className="mt-auto d-flex justify-content-between align-items-center">
                     <span className="badge bg-primary rounded-pill px-3 py-2">
@@ -410,7 +407,7 @@ const MarketplaceHome = ({ referenceId }) => {
             <img
               className="d-block w-100"
               src="https://static.vecteezy.com/system/resources/previews/017/797/790/non_2x/banner-for-nft-industry-one-point-perspective-concept-with-terms-of-web3-vector.jpg"
-              alt="NFT Collection"
+              alt="Bộ sưu tập NFT"
             />
             <Carousel.Caption>
               <h3>Bộ sưu tập NFT độc quyền</h3>
@@ -421,7 +418,7 @@ const MarketplaceHome = ({ referenceId }) => {
             <img
               className="d-block w-100"
               src="https://static.vecteezy.com/system/resources/previews/023/325/782/non_2x/futuristic-digital-technology-metaverse-nft-virtual-reality-concept-young-girl-wearing-vr-virtual-reality-goggle-experiencing-virtual-world-glitch-effect-vector.jpg"
-              alt="Metaverse Experience"
+              alt="Trải nghiệm Metaverse"
             />
             <Carousel.Caption>
               <h3>Trải nghiệm Metaverse</h3>
@@ -534,7 +531,7 @@ const MarketplaceHome = ({ referenceId }) => {
           </div>
           <Pagination
             currentPage={state.currentPage}
-            totalPages={totalPages}
+            totalPages={Math.ceil(filteredItems.length / state.itemsPerPage)}
             onPageChange={(page) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { currentPage: page } })}
           />
           <Form.Select
