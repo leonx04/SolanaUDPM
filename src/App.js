@@ -17,6 +17,7 @@ import Home from "./components/Home";
 import MyNfts from "./components/MyNfts";
 import PurchaseHistory from "./components/PurchaseHistory";
 import { UserContext } from './contexts/UserContext';
+import { getDatabase, ref, onValue } from "firebase/database";
 
 // Địa chỉ token USDC chính thức trên Solana devnet
 const USDC_MINT_ADDRESS = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
@@ -27,6 +28,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [userProfile, setUserProfile] = useState(null); // Added userProfile state
 
   // Theme state
   const [theme, setTheme] = useState(() => {
@@ -267,6 +269,18 @@ function App() {
     disconnectWallet();
   };
 
+  useEffect(() => {
+    if (isLoggedIn && userData) {
+      const db = getDatabase();
+      const userRef = ref(db, `account/${userData.referenceId}`);
+      onValue(userRef, (snapshot) => {
+        if (snapshot.exists()) {
+          setUserProfile(snapshot.val());
+        }
+      });
+    }
+  }, [isLoggedIn, userData]); // Added useEffect for fetching user profile
+
   return (
     <Router>
       <UserContext.Provider value={[userData, setUserData]}>
@@ -432,14 +446,25 @@ function App() {
                       id="user-dropdown"
                       className="theme-text d-flex align-items-center text-decoration-none"
                     >
-                      <i className="bi bi-person-circle me-2"></i>
-                      {userData?.email}
+                      {userProfile ? (
+                        <div className="d-flex align-items-center">
+                          <img
+                            src={userProfile.imageUrl || 'https://via.placeholder.com/40'}
+                            alt="User Avatar"
+                            className="rounded-circle me-2"
+                            style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                          />
+                          <span>{userProfile.username || userData.email}</span>
+                        </div>
+                      ) : (
+                        userData?.email
+                      )}
                     </Dropdown.Toggle>
 
                     <Dropdown.Menu>
                       <Dropdown.Item as={Link} to="/account">
                         <i className="bi bi-person-circle me-2"></i>
-                        Manage Account
+                        Quản lý tài khoản
                       </Dropdown.Item>
                       <Dropdown.Divider />
                       <Dropdown.Item onClick={handleLogout} className="text-danger">
@@ -512,3 +537,4 @@ function App() {
 }
 
 export default App;
+
