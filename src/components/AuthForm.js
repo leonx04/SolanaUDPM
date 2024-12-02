@@ -1,31 +1,23 @@
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { createRecord } from '../firebaseConfig';
 import axios from 'axios';
+import { apiKey } from '../api';
 import { driver as Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import React, { useEffect, useState } from 'react';
 import unidecode from 'unidecode';
-import { apiKey } from '../api';
 
 const apiBaseUrl = "https://api.gameshift.dev/nx/users";
 const PHANTOM_WALLET_DOWNLOAD_LINK = "https://phantom.app/download";
 
 const AuthForm = ({ setIsLoggedIn, setUserData }) => {
-
-  // Trạng thái quản lý dữ liệu biểu mẫu
-  const [formData, setFormData] = useState({
-    referenceId: '',  // Mã định danh duy nhất của người dùng
-    email: '',        // Địa chỉ email để xác thực
-    externalWalletAddress: ''  // Địa chỉ ví Solana khi đăng ký
-  });
-
-  // Các trạng thái quản lý giao diện và logic
+  const { register, handleSubmit, formState: { errors }, setError, clearErrors } = useForm();
   const [isRegistering, setIsRegistering] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [isFormVisible, setIsFormVisible] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isPhantomInstalled, setIsPhantomInstalled] = useState(false);
 
-  // Kiểm tra và khởi tạo hướng dẫn khi component được tải
   useEffect(() => {
     const checkPhantomWallet = () => {
       const { solana } = window;
@@ -36,7 +28,6 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
     initializeDriverGuide();
   }, []);
 
-  // Hàm khởi tạo hướng dẫn từng bước
   const initializeDriverGuide = () => {
     const driver = new Driver({
       animate: true,
@@ -46,25 +37,25 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
       doneBtnText: 'Hoàn tất',
       steps: [
         {
-          element: '#referenceId-input',
+          element: '#referenceId',
           popover: {
-            title: 'Tên tài khoản',
-            description: 'Nhập tên tài khoản duy nhất. Đây là thông tin định danh tài khoản của bạn trong hệ thống.',
+            title: 'Tên đăng nhập',
+            description: 'Nhập tên đăng nhập duy nhất. Đây là thông tin định danh đăng nhập của bạn trong hệ thống.',
             position: 'bottom'
           }
         },
         {
-          element: '#email-input',
+          element: '#email',
           popover: {
             title: 'Email',
-            description: 'Điền địa chỉ email chính xác. Email này sẽ được sử dụng để xác thực và khôi phục tài khoản.',
+            description: 'Điền địa chỉ email chính xác. Email này sẽ được sử dụng để xác thực và khôi phục đăng nhập.',
             position: 'bottom'
           }
         },
         {
           element: '#auth-button',
           popover: {
-            title: 'Xác thực Tài khoản',
+            title: 'Xác thực đăng nhập',
             description: 'Nhấn nút để hoàn tất quá trình đăng ký hoặc đăng nhập. Lưu ý đăng ký cần kết nối Phantom Wallet.',
             position: 'top'
           }
@@ -72,11 +63,9 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
       ]
     });
 
-    // Tự động bắt đầu hướng dẫn khi trang được tải
     driver.drive();
   };
 
-  // Kết nối với Phantom Wallet
   const connectPhantomWallet = async () => {
     if (!isPhantomInstalled) {
       setErrorMessage(
@@ -104,59 +93,13 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
     }
   };
 
-  // Cập nhật trạng thái form khi người dùng thay đổi giá trị
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    const updatedValue = unidecode(value);  // Sử dụng unidecode để loại bỏ dấu
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: updatedValue
-    }));
-    setErrorMessage('');
-    setSuccessMessage('');
-  };
-
-  // Xác thực dữ liệu biểu mẫu
-  const validateForm = () => {
-    if (!formData.referenceId || !formData.email) {
-      setErrorMessage('Vui lòng nhập đầy đủ thông tin.');
-      return false;
-    }
-    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      setErrorMessage('Email không hợp lệ.');
-      return false;
-    }
-    if (isRegistering && !isPhantomInstalled) {
-      setErrorMessage(
-        <div>
-          Phantom Wallet chưa được cài đặt.
-          <a
-            href={PHANTOM_WALLET_DOWNLOAD_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="alert-link ms-1"
-          >
-            Tải Phantom Wallet tại đây
-          </a>
-        </div>
-      );
-      return false;
-    }
-    return true;
-  };
-
-  // Xử lý hành động đăng ký hoặc đăng nhập
-  const handleAction = async (isRegister) => {
-    if (!validateForm()) return;
-
+  const onSubmit = async (data) => {
     setIsLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
 
     try {
-      if (isRegister) {
-        // Kiểm tra và yêu cầu kết nối Phantom Wallet
+      if (isRegistering) {
         if (!isPhantomInstalled) {
           setErrorMessage(
             <div>
@@ -181,12 +124,6 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
           return;
         }
 
-        // Cập nhật địa chỉ ví vào form
-        setFormData(prev => ({
-          ...prev,
-          externalWalletAddress: walletAddress
-        }));
-
         const config = {
           headers: {
             'accept': 'application/json',
@@ -195,16 +132,22 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
           }
         };
 
-        // Gửi yêu cầu đăng ký
         await axios.post(apiBaseUrl, {
-          referenceId: formData.referenceId,
-          email: formData.email,
+          referenceId: data.referenceId,
+          email: data.email,
           externalWalletAddress: walletAddress
         }, config);
 
+        // Create a record in Firebase
+        await createRecord(`/account/${data.referenceId}`, {
+          referenceId: data.referenceId,
+          email: data.email,
+          imageUrl: null,
+          socialLinks: null
+        });
+
         setSuccessMessage('Đăng ký thành công!');
       } else {
-        // Quy trình đăng nhập
         const config = {
           headers: {
             'accept': 'application/json',
@@ -212,43 +155,31 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
           }
         };
 
-        const response = await axios.get(`${apiBaseUrl}/${formData.referenceId}`, config);
+        const response = await axios.get(`${apiBaseUrl}/${data.referenceId}`, config);
 
-        if (response.data.email !== formData.email) {
+        if (response.data.email !== data.email) {
           throw new Error('Email không khớp');
         }
 
         setSuccessMessage('Đăng nhập thành công!');
       }
 
-      // Cập nhật trạng thái sau khi thành công
       setTimeout(() => {
-        setUserData(formData);
+        setUserData(data);
         setIsLoggedIn(true);
-        setIsFormVisible(false);
       }, 1500);
     } catch (err) {
-      // Xử lý các lỗi từ phía server
-      setErrorMessage(
-        err.response?.status === 409
-          ? 'Tài khoản đã tồn tại.'
-          : 'Đã xảy ra lỗi. Vui lòng thử lại sau.'
-      );
+      if (err.response?.status === 409) {
+        setError('referenceId', { type: 'manual', message: 'đăng nhập đã tồn tại.' });
+      } else if (err.message === 'Email không khớp') {
+        setError('email', { type: 'manual', message: 'Email không khớp với đăng nhập.' });
+      } else {
+        setErrorMessage('Đã xảy ra lỗi. Vui lòng thử lại sau.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Render spinner khi form ẩn
-  if (!isFormVisible) {
-    return (
-      <div className="position-absolute top-50 start-50 translate-middle text-center">
-        <div className="spinner-grow text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="vh-100 d-flex align-items-center justify-content-center bg-light">
@@ -258,40 +189,47 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
             <div className="bg-white rounded-4 p-4 shadow-sm">
               <div className="text-center mb-4">
                 <h4 className="fw-bold mb-1 text-dark">
-                  {isRegistering ? 'Tạo tài khoản' : 'Đăng nhập'}
+                  {isRegistering ? 'Tạo đăng nhập' : 'Đăng nhập'}
                 </h4>
                 <p className="text-secondary small mb-0">
                   {isRegistering
-                    ? 'Nhập thông tin để tạo tài khoản mới'
+                    ? 'Nhập thông tin để tạo đăng nhập mới'
                     : 'Đăng nhập để tiếp tục'}
                 </p>
               </div>
 
-              <form>
+              <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="mb-3">
                   <input
-                    id="referenceId-input"
+                    id="referenceId"
                     type="text"
-                    className="form-control form-control-lg bg-light border-0 rounded-3"
-                    placeholder="Tên tài khoản"
-                    name="referenceId"
-                    value={formData.referenceId}
-                    onChange={handleInputChange}
+                    className={`form-control form-control-lg bg-light border-0 rounded-3 ${errors.referenceId ? 'is-invalid' : ''}`}
+                    placeholder="Tên đăng nhập"
+                    {...register("referenceId", { 
+                      required: "Vui lòng nhập tên đăng nhập",
+                      validate: value => unidecode(value) === value || "Tên đăng nhập không được chứa dấu"
+                    })}
                     disabled={isLoading}
                   />
+                  {errors.referenceId && <div className="invalid-feedback">{errors.referenceId.message}</div>}
                 </div>
 
                 <div className="mb-4">
                   <input
-                    id="email-input"
+                    id="email"
                     type="email"
-                    className="form-control form-control-lg bg-light border-0 rounded-3"
+                    className={`form-control form-control-lg bg-light border-0 rounded-3 ${errors.email ? 'is-invalid' : ''}`}
                     placeholder="Email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
+                    {...register("email", { 
+                      required: "Vui lòng nhập email",
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: "Email không hợp lệ"
+                      }
+                    })}
                     disabled={isLoading}
                   />
+                  {errors.email && <div className="invalid-feedback">{errors.email.message}</div>}
                 </div>
 
                 {isRegistering && !isPhantomInstalled && (
@@ -310,9 +248,8 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
 
                 <button
                   id="auth-button"
-                  type="button"
+                  type="submit"
                   className={`btn ${isRegistering ? 'btn-dark' : 'btn-primary'} w-100 py-3 rounded-3 position-relative overflow-hidden`}
-                  onClick={() => handleAction(isRegistering)}
                   disabled={isLoading || (isRegistering && !isPhantomInstalled)}
                 >
                   {isLoading ? (
@@ -343,11 +280,14 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
                 <button
                   type="button"
                   className="btn btn-link text-decoration-none p-0 text-secondary"
-                  onClick={() => setIsRegistering(!isRegistering)}
+                  onClick={() => {
+                    setIsRegistering(!isRegistering);
+                    clearErrors();
+                  }}
                   disabled={isLoading}
                 >
                   <small>
-                    {isRegistering ? 'Đã có tài khoản? ' : 'Chưa có tài khoản? '}
+                    {isRegistering ? 'Đã có đăng nhập? ' : 'Chưa có đăng nhập? '}
                     <span className="text-primary fw-semibold">
                       {isRegistering ? 'Đăng nhập' : 'Đăng ký'}
                     </span>
@@ -363,3 +303,4 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
 };
 
 export default AuthForm;
+

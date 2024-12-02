@@ -100,7 +100,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     </nav>
   );
 };
-
 // Action types for reducer
 const ACTIONS = {
   FETCH_START: 'FETCH_START',
@@ -137,7 +136,6 @@ const reducer = (state, action) => {
   }
 };
 
-// Main MarketplaceHome component
 const MarketplaceHome = ({ referenceId }) => {
   const [state, dispatch] = useReducer(reducer, {
     allItems: [],
@@ -151,7 +149,7 @@ const MarketplaceHome = ({ referenceId }) => {
     priceRange: { min: '', max: '' },
     searchQuery: '',
     currentPage: 1,
-    itemsPerPage: 10,
+    itemsPerPage: 6, // Updated default value
   });
 
   const productSectionRef = useRef(null);
@@ -161,7 +159,7 @@ const MarketplaceHome = ({ referenceId }) => {
     return state.allItems.filter(itemData =>
       itemData.type === 'UniqueAsset' &&
       itemData.item.priceCents !== null &&
-      itemData.item.priceCents > 0 && // Add this condition
+      itemData.item.priceCents > 0 &&
       itemData.item.owner.referenceId !== referenceId &&
       itemData.item.name.toLowerCase().includes(state.searchQuery.toLowerCase()) &&
       (state.priceRange.min === '' || itemData.item.priceCents >= state.priceRange.min * 100) &&
@@ -178,16 +176,12 @@ const MarketplaceHome = ({ referenceId }) => {
 
   const featuredItems = useMemo(() => {
     const sortedItems = state.allItems
-      .filter(itemData => itemData.item.priceCents > 0) // Add this filter
+      .filter(itemData => itemData.item.priceCents > 0)
       .sort((a, b) => {
-        // Sort by price (lowest first)
         const priceDiff = a.item.priceCents - b.item.priceCents;
         if (priceDiff !== 0) return priceDiff;
-        
-        // If prices are equal, sort by date (newest first)
         return new Date(b.item.createdAt) - new Date(a.item.createdAt);
       });
-    
     return sortedItems.slice(0, 3);
   }, [state.allItems]);
 
@@ -197,7 +191,6 @@ const MarketplaceHome = ({ referenceId }) => {
     return filteredItems.slice(startIndex, endIndex);
   }, [filteredItems, state.currentPage, state.itemsPerPage]);
 
-  const totalPages = Math.ceil(filteredItems.length / state.itemsPerPage);
 
   const fetchAllItems = useCallback(async (signal) => {
     dispatch({ type: ACTIONS.FETCH_START });
@@ -534,7 +527,7 @@ const MarketplaceHome = ({ referenceId }) => {
           </div>
           <Pagination
             currentPage={state.currentPage}
-            totalPages={totalPages}
+            totalPages={Math.ceil(filteredItems.length / state.itemsPerPage)}
             onPageChange={(page) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { currentPage: page } })}
           />
           <Form.Select
@@ -631,4 +624,3 @@ const MarketplaceHome = ({ referenceId }) => {
 };
 
 export default MarketplaceHome;
-
