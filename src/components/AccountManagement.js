@@ -163,9 +163,9 @@ const AccountManagement = () => {
 
   return (
     <div className="profile-container">
-      <div 
-        className="cover-image position-relative" 
-        style={{ 
+      <div
+        className="cover-image position-relative"
+        style={{
           height: '300px',
           backgroundImage: `url(${profileData?.coverImageUrl || 'https://via.placeholder.com/1200x300'})`,
           backgroundSize: 'cover',
@@ -194,33 +194,39 @@ const AccountManagement = () => {
           </Col>
           <Col md={9}>
             <div className="mt-3">
-              <h2 className="mb-1">{profileData?.username || 'Chưa đặt tên'}</h2>
-              <p className="text-muted mb-2">
-                <small>ID tham chiếu: {referenceId}</small>
-              </p>
-              <p className="text-muted mb-2">
-                <small>Email: {profileData?.email}</small>
-              </p>
-              <p className="mb-3">{profileData?.bio || 'Chưa có tiểu sử'}</p>
-              
-              <div className="d-flex gap-2 mb-4">
-                {Object.entries(profileData?.socialLinks || {}).map(([platform, username]) => {
-                  if (!username) return null;
-                  const { icon: Icon, color, prefix } = SOCIAL_PLATFORMS[platform];
-                  return (
-                    <a
-                      key={platform}
-                      href={prefix + username}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-decoration-none"
-                      style={{ color }}
-                    >
-                      <Icon size={20} />
-                    </a>
-                  );
-                })}
+              <div className="mb-3">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h2 className="mb-1">{profileData?.username || 'Chưa đặt tên'}</h2>
+                    <p className="text-muted mb-2">
+                      <small>ID tham chiếu: {referenceId}</small>
+                    </p>
+                    <p className="text-muted mb-2">
+                      <small>Email: {profileData?.email}</small>
+                    </p>
+                  </div>
+                  <div className="d-flex gap-2">
+                    {Object.entries(profileData?.socialLinks || {}).map(([platform, username]) => {
+                      if (!username) return null;
+                      const { icon: Icon, color, prefix } = SOCIAL_PLATFORMS[platform];
+                      return (
+                        <a
+                          key={platform}
+                          href={prefix + username}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-decoration-none"
+                          style={{ color }}
+                        >
+                          <Icon size={20} />
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+                <p className="mb-3">{profileData?.bio || 'Chưa có tiểu sử'}</p>
               </div>
+
             </div>
           </Col>
         </Row>
@@ -266,9 +272,9 @@ const AccountManagement = () => {
           <Form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label className="d-block mb-2">Ảnh bìa</label>
-              <div 
-                className="cover-preview position-relative mb-2" 
-                style={{ 
+              <div
+                className="cover-preview position-relative mb-2"
+                style={{
                   height: '200px',
                   backgroundImage: `url(${coverPreview || profileData.coverImageUrl || 'https://via.placeholder.com/1200x300'})`,
                   backgroundSize: 'cover',

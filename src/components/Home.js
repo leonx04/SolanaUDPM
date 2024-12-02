@@ -206,7 +206,7 @@ const MarketplaceHome = ({ referenceId }) => {
           params: {
             perPage: 100,
             page: page,
-            collectionId: 'bbe92f30-9a6a-46ce-90c5-17fd1ad6e0dc',
+            collectionId: '5e8342d1-cee1-442d-8c84-da85aab28a16',
           },
           headers: {
             accept: 'application/json',
