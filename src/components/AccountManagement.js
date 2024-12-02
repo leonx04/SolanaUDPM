@@ -8,9 +8,9 @@ import axios from 'axios';
 import { get, getDatabase, ref, update } from "firebase/database";
 
 const SOCIAL_PLATFORMS = {
-  facebook: { icon: Facebook, color: '#1877F2', prefix: 'https://facebook.com/' },
-  github: { icon: GitHub, color: '#181717', prefix: 'https://github.com/' },
-  youtube: { icon: Youtube, color: '#FF0000', prefix: 'https://youtube.com/' },
+  facebook: { icon: Facebook, color: '#1877F2', prefix: '' },
+  github: { icon: GitHub, color: '#181717', prefix: '' },
+  youtube: { icon: Youtube, color: '#FF0000', prefix: '' },
   website: { icon: Globe, color: '#4CAF50', prefix: '' }
 };
 
