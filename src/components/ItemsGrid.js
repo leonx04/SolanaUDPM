@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Card, Col, Form, Modal, Pagination, Row } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Form, Modal, Pagination, Row, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
 
 const ItemsGrid = ({ referenceId, isOwnProfile }) => {
@@ -23,6 +23,9 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
     const [itemsPerPage, setItemsPerPage] = useState(12);
     const [marketFilter, setMarketFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [showBuyModal, setShowBuyModal] = useState(false);
+    const [buyError, setBuyError] = useState(null);
+    const [buyLoading, setBuyLoading] = useState(false);
 
     const CLOUDINARY_UPLOAD_PRESET = 'ARTSOLANA';
     const CLOUDINARY_CLOUD_NAME = 'dy3nmkszo';
@@ -311,11 +314,11 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
         if (type === 'Currency') return false;
 
         const matchesFilter = (marketFilter === 'forSale' && item.priceCents > 0 && item.status === 'Committed') ||
-                              (marketFilter === 'notForSale' && (!item.priceCents || item.priceCents === 0)) ||
-                              marketFilter === 'all';
+            (marketFilter === 'notForSale' && (!item.priceCents || item.priceCents === 0)) ||
+            marketFilter === 'all';
 
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              item.description.toLowerCase().includes(searchTerm.toLowerCase());
+            item.description.toLowerCase().includes(searchTerm.toLowerCase());
 
         return matchesFilter && matchesSearch;
     });
@@ -324,6 +327,55 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+    const handleBuyItem = (item) => {
+        setSelectedItem(item);
+        setShowBuyModal(true);
+        setBuyError(null);
+    };
+
+    const buyItemWithPhantomWallet = async () => {
+        setBuyLoading(true);
+        setBuyError(null);
+
+        try {
+            const provider = window.phantom?.solana;
+            if (!provider || !provider.isConnected) {
+                throw new Error("Vui lòng kết nối ví Phantom trước khi mua");
+            }
+
+            const response = await fetch(
+                `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/buy`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'content-type': 'application/json',
+                        'x-api-key': apiKey
+                    },
+                    body: JSON.stringify({
+                        buyerId: referenceId
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Không thể thực hiện giao dịch');
+            }
+
+            const data = await response.json();
+            const { consentUrl } = data;
+            window.open(consentUrl, '_blank');
+            fetchItems();
+            setShowBuyModal(false);
+        } catch (err) {
+            console.error('Lỗi mua sản phẩm:', err);
+            setBuyError(err.message || 'Không thể thực hiện giao dịch. Vui lòng thử lại.');
+        } finally {
+            setBuyLoading(false);
+        }
+    };
 
     return (
         <div className="items-grid">
@@ -365,9 +417,7 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
 
             {loading ? (
                 <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Đang tải...</span>
-                    </div>
+                    <Spinner animation="border" variant="primary" />
                 </div>
             ) : error ? (
                 <Alert variant="danger">{error}</Alert>
@@ -382,22 +432,22 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
 
                             return (
                                 <Col key={index}>
-                                    <Card>
+                                    <Card style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                         <Card.Img
                                             variant="top"
                                             src={item.imageUrl || 'https://via.placeholder.com/300'}
                                             alt={item.name}
                                             style={{ height: '200px', objectFit: 'cover' }}
                                         />
-                                        <Card.Body>
+                                        <Card.Body className="d-flex flex-column">
                                             <Card.Title>{item.name || item.symbol || '-'}</Card.Title>
-                                            <Card.Text>{item.description || '-'}</Card.Text>
+                                            <Card.Text className="flex-grow-1">{item.description || '-'}</Card.Text>
                                             {(item.priceCents > 0 && item.status === 'Committed') ? (
-                                                <div className="d-flex justify-content-between align-items-center">
+                                                <div className="d-flex justify-content-between align-items-center mt-auto">
                                                     <span className="text-success fw-bold">
                                                         {(item.priceCents / 100).toFixed(2)} USDC
                                                     </span>
-                                                    {isOwnProfile && (
+                                                    {isOwnProfile ? (
                                                         <Button
                                                             variant="outline-danger"
                                                             size="sm"
@@ -406,11 +456,19 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
                                                         >
                                                             {isProcessing ? 'Đang xử lý...' : 'Hủy bán'}
                                                         </Button>
+                                                    ) : (
+                                                        <Button
+                                                            variant="primary"
+                                                            size="sm"
+                                                            onClick={() => handleBuyItem(item)}
+                                                        >
+                                                            Mua ngay
+                                                        </Button>
                                                     )}
                                                 </div>
                                             ) : (
                                                 isOwnProfile && (
-                                                    <div className="d-flex justify-content-between align-items-center">
+                                                    <div className="d-flex justify-content-between align-items-center mt-auto">
                                                         <Button
                                                             variant="outline-primary"
                                                             size="sm"
@@ -597,6 +655,79 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
                         disabled={isEditing}
                     >
                         {isEditing ? 'Đang lưu...' : 'Lưu thay đổi'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            <Modal show={showBuyModal} onHide={() => setShowBuyModal(false)} size="lg" centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Xác nhận mua {selectedItem?.name}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="row">
+                        <div className="col-md-6">
+                            <img
+                                src={selectedItem?.imageUrl}
+                                alt={selectedItem?.name}
+                                className="img-fluid rounded shadow-sm mb-3"
+                            />
+                        </div>
+                        <div className="col-md-6">
+                            <h5 className="mb-3">Chi tiết sản phẩm</h5>
+                            <Card className="mb-3">
+                                <Card.Body>
+                                    <p><strong>Tên:</strong> {selectedItem?.name}</p>
+                                    <p><strong>Mô tả:</strong> {selectedItem?.description || 'Không có mô tả'}</p>
+                                    <p><strong>Giá:</strong> ${(selectedItem?.priceCents / 100).toFixed(2)} USDC</p>
+                                </Card.Body>
+                            </Card>
+
+                            {selectedItem?.attributes && selectedItem.attributes.length > 0 && (
+                                <Card>
+                                    <Card.Header>Thuộc tính</Card.Header>
+                                    <Card.Body>
+                                        {selectedItem.attributes.map((attr, index) => (
+                                            <div key={index} className="d-flex justify-content-between mb-2">
+                                                <span className="text-muted">{attr.traitType}</span>
+                                                <span className="badge bg-secondary">{attr.value}</span>
+                                            </div>
+                                        ))}
+                                    </Card.Body>
+                                </Card>
+                            )}
+
+                            {buyError && (
+                                <Alert variant="danger" className="mt-3">
+                                    {buyError}
+                                </Alert>
+                            )}
+                        </div>
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowBuyModal(false)}>
+                        Hủy
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={buyItemWithPhantomWallet}
+                        disabled={buyLoading}
+                    >
+                        {buyLoading ? (
+                            <>
+                                <Spinner
+                                    as="span"
+                                    animation="border"
+                                    size="sm"
+                                    role="status"
+                                    aria-hidden="true"
+                                    className="me-2"
+                                />
+                                Đang xử lý...
+                            </>
+                        ) : (
+                            'Xác nhận mua'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>
