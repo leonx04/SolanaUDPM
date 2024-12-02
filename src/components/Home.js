@@ -176,14 +176,17 @@ const MarketplaceHome = ({ referenceId }) => {
 
   const featuredItems = useMemo(() => {
     const sortedItems = state.allItems
-      .filter(itemData => itemData.item.priceCents > 0)
+      .filter(itemData => 
+        itemData.item.priceCents > 0 && 
+        itemData.item.owner.referenceId !== referenceId 
+      )
       .sort((a, b) => {
         const priceDiff = a.item.priceCents - b.item.priceCents;
         if (priceDiff !== 0) return priceDiff;
         return new Date(b.item.createdAt) - new Date(a.item.createdAt);
       });
     return sortedItems.slice(0, 3);
-  }, [state.allItems]);
+  }, [state.allItems, referenceId]);
 
   const paginatedItems = useMemo(() => {
     const startIndex = (state.currentPage - 1) * state.itemsPerPage;
@@ -624,3 +627,4 @@ const MarketplaceHome = ({ referenceId }) => {
 };
 
 export default MarketplaceHome;
+

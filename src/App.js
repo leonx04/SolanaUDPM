@@ -411,7 +411,7 @@ function App() {
 
 
               {/* Main Content Area */}
-              <div className="content-area">
+              <div className="content-area ms-4">
                 <Routes>
                   <Route path="/" element={<Navigate to="/home" replace />} />
                   <Route path="/home" element={<Home referenceId={userData?.referenceId} />} />
