@@ -193,10 +193,7 @@ const AccountManagement = () => {
                   <div>
                     <h2 className="mb-1">{profileData?.username || 'Chưa đặt tên'}</h2>
                     <p className="text-muted mb-2">
-                      <small>ID tham chiếu: {referenceId}</small>
-                    </p>
-                    <p className="text-muted mb-2">
-                      <small>Email: {profileData?.email}</small>
+                      <small>{profileData?.email}</small>
                     </p>
                   </div>
                   <div className="d-flex gap-2">
