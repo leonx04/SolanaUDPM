@@ -8,7 +8,7 @@ import {
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Dropdown } from 'react-bootstrap';
+import { Button, Dropdown, Form, Modal } from 'react-bootstrap';
 import { Link, Navigate, NavLink, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import './App.css';
 import AccountManagement from "./components/AccountManagement";
@@ -50,7 +50,8 @@ function App() {
   const [showNotification, setShowNotification] = useState(false);
   const [showSigningModal, setShowSigningModal] = useState(false);
   const [messageToSign, setMessageToSign] = useState('');
-  const [signedMessage, setSignedMessage] = useState('');
+  const [signedMessage, setSignedMessage] = useState(''); // eslint-disable-line no-unused-vars
+
 
   // Hàm lấy số dư USDC
   const getUsdcBalance = async (connection, walletPublicKey) => {
@@ -456,13 +457,13 @@ function App() {
                     <Route path="/home" element={<Home referenceId={userData?.referenceId} />} />
                     <Route path="/my-nfts" element={<MyNfts referenceId={userData?.referenceId} />} />
                     <Route path="/purchase-history" element={<PurchaseHistory referenceId={userData?.referenceId} />} />
-                    <Route 
-                      path="/account" 
-                      element={<Navigate to={`/account/${userData?.referenceId}`} replace />} 
+                    <Route
+                      path="/account"
+                      element={<Navigate to={`/account/${userData?.referenceId}`} replace />}
                     />
-                    <Route 
-                      path="/account/:referenceId" 
-                      element={<AccountManagement />} 
+                    <Route
+                      path="/account/:referenceId"
+                      element={<AccountManagement />}
                     />
                   </Routes>
                 </div>
@@ -471,6 +472,41 @@ function App() {
           )}
         </div>
       </UserContext.Provider>
+      {/* Notification Modal */}
+      <Modal show={showNotification} onHide={() => setShowNotification(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Thông báo</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Ví Phantom đã được kết nối thành công!</Modal.Body>
+      </Modal>
+
+      {/* Signing Modal */}
+      <Modal show={showSigningModal} onHide={() => setShowSigningModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Ký tin nhắn</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Nhập tin nhắn để ký</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Nhập tin nhắn"
+                value={messageToSign}
+                onChange={(e) => setMessageToSign(e.target.value)}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSigningModal(false)}>
+            Hủy
+          </Button>
+          <Button variant="primary" onClick={signMessage}>
+            Ký tin nhắn
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Router>
   );
 }
