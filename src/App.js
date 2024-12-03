@@ -8,15 +8,16 @@ import {
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Dropdown } from 'react-bootstrap';
-import { Navigate, NavLink, Route, BrowserRouter as Router, Routes, Link } from "react-router-dom";
+import { Button, Dropdown, Form, Modal } from 'react-bootstrap';
+import { Link, Navigate, NavLink, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import './App.css';
+import AccountManagement from "./components/AccountManagement";
 import AuthForm from "./components/AuthForm";
 import Home from "./components/Home";
 import MyNfts from "./components/MyNfts";
 import PurchaseHistory from "./components/PurchaseHistory";
-import AccountManagement from "./components/AccountManagement";
 import { UserContext } from './contexts/UserContext';
+import { getDatabase, ref, onValue } from "firebase/database";
 
 // Địa chỉ token USDC chính thức trên Solana devnet
 const USDC_MINT_ADDRESS = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
@@ -27,6 +28,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [userProfile, setUserProfile] = useState(null); // Added userProfile state
 
   // Theme state
   const [theme, setTheme] = useState(() => {
@@ -50,7 +52,8 @@ function App() {
   const [showNotification, setShowNotification] = useState(false);
   const [showSigningModal, setShowSigningModal] = useState(false);
   const [messageToSign, setMessageToSign] = useState('');
-  const [signedMessage, setSignedMessage] = useState('');
+  const [signedMessage, setSignedMessage] = useState(''); // eslint-disable-line no-unused-vars
+
 
   // Hàm lấy số dư USDC
   const getUsdcBalance = async (connection, walletPublicKey) => {
@@ -266,6 +269,18 @@ function App() {
     disconnectWallet();
   };
 
+  useEffect(() => {
+    if (isLoggedIn && userData) {
+      const db = getDatabase();
+      const userRef = ref(db, `account/${userData.referenceId}`);
+      onValue(userRef, (snapshot) => {
+        if (snapshot.exists()) {
+          setUserProfile(snapshot.val());
+        }
+      });
+    }
+  }, [isLoggedIn, userData]); // Added useEffect for fetching user profile
+
   return (
     <Router>
       <UserContext.Provider value={[userData, setUserData]}>
@@ -431,14 +446,25 @@ function App() {
                       id="user-dropdown"
                       className="theme-text d-flex align-items-center text-decoration-none"
                     >
-                      <i className="bi bi-person-circle me-2"></i>
-                      {userData?.email}
+                      {userProfile ? (
+                        <div className="d-flex align-items-center">
+                          <img
+                            src={userProfile.imageUrl || 'https://via.placeholder.com/40'}
+                            alt="User Avatar"
+                            className="rounded-circle me-2"
+                            style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                          />
+                          <span>{userProfile.username || userData.email}</span>
+                        </div>
+                      ) : (
+                        userData?.email
+                      )}
                     </Dropdown.Toggle>
 
                     <Dropdown.Menu>
                       <Dropdown.Item as={Link} to="/account">
                         <i className="bi bi-person-circle me-2"></i>
-                        Manage Account
+                        Quản lý tài khoản
                       </Dropdown.Item>
                       <Dropdown.Divider />
                       <Dropdown.Item onClick={handleLogout} className="text-danger">
@@ -456,13 +482,13 @@ function App() {
                     <Route path="/home" element={<Home referenceId={userData?.referenceId} />} />
                     <Route path="/my-nfts" element={<MyNfts referenceId={userData?.referenceId} />} />
                     <Route path="/purchase-history" element={<PurchaseHistory referenceId={userData?.referenceId} />} />
-                    <Route 
-                      path="/account" 
-                      element={<Navigate to={`/account/${userData?.referenceId}`} replace />} 
+                    <Route
+                      path="/account"
+                      element={<Navigate to={`/account/${userData?.referenceId}`} replace />}
                     />
-                    <Route 
-                      path="/account/:referenceId" 
-                      element={<AccountManagement />} 
+                    <Route
+                      path="/account/:referenceId"
+                      element={<AccountManagement />}
                     />
                   </Routes>
                 </div>
@@ -471,8 +497,44 @@ function App() {
           )}
         </div>
       </UserContext.Provider>
+      {/* Notification Modal */}
+      <Modal show={showNotification} onHide={() => setShowNotification(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Thông báo</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Ví Phantom đã được kết nối thành công!</Modal.Body>
+      </Modal>
+
+      {/* Signing Modal */}
+      <Modal show={showSigningModal} onHide={() => setShowSigningModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Ký tin nhắn</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Nhập tin nhắn để ký</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Nhập tin nhắn"
+                value={messageToSign}
+                onChange={(e) => setMessageToSign(e.target.value)}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSigningModal(false)}>
+            Hủy
+          </Button>
+          <Button variant="primary" onClick={signMessage}>
+            Ký tin nhắn
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Router>
   );
 }
 
 export default App;
+

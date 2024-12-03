@@ -165,7 +165,7 @@ const CreateProduct = ({ referenceId, collectionId, onSuccess }) => {
 
       const payload = {
         details: {
-          collectionId: collectionId,
+          collectionId: '35fe7ca2-e2ce-4df5-b24c-5040c6f0d186',
           name: formData.name,
           description: formData.description,
           imageUrl: imageUrl,

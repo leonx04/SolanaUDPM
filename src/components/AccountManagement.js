@@ -2,21 +2,16 @@ import axios from 'axios';
 import { get, getDatabase, ref, update } from "firebase/database";
 import React, { useContext, useEffect, useState } from 'react';
 import { Alert, Button, Col, Form, Modal, Nav, Row, Tab } from 'react-bootstrap';
-import {
-  Edit3,
-  Facebook,
-  GitHub,
-  Globe,
-  Youtube
-} from 'react-feather';
+import { Edit3, Facebook, GitHub, Globe, Youtube } from 'react-feather';
 import { useParams } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
+import ItemsForSale from './ItemsForSale';
 import ItemsGrid from './ItemsGrid';
 
 const SOCIAL_PLATFORMS = {
-  facebook: { icon: Facebook, color: '#1877F2', prefix: 'https://facebook.com/' },
-  github: { icon: GitHub, color: '#181717', prefix: 'https://github.com/' },
-  youtube: { icon: Youtube, color: '#FF0000', prefix: 'https://youtube.com/' },
+  facebook: { icon: Facebook, color: '#1877F2', prefix: '' },
+  github: { icon: GitHub, color: '#181717', prefix: '' },
+  youtube: { icon: Youtube, color: '#FF0000', prefix: '' },
   website: { icon: Globe, color: '#4CAF50', prefix: '' }
 };
 
@@ -163,9 +158,9 @@ const AccountManagement = () => {
 
   return (
     <div className="profile-container">
-      <div 
-        className="cover-image position-relative" 
-        style={{ 
+      <div
+        className="cover-image position-relative rounded-3"
+        style={{
           height: '300px',
           backgroundImage: `url(${profileData?.coverImageUrl || 'https://via.placeholder.com/1200x300'})`,
           backgroundSize: 'cover',
@@ -194,33 +189,36 @@ const AccountManagement = () => {
           </Col>
           <Col md={9}>
             <div className="mt-3">
-              <h2 className="mb-1">{profileData?.username || 'Chưa đặt tên'}</h2>
-              <p className="text-muted mb-2">
-                <small>ID tham chiếu: {referenceId}</small>
-              </p>
-              <p className="text-muted mb-2">
-                <small>Email: {profileData?.email}</small>
-              </p>
-              <p className="mb-3">{profileData?.bio || 'Chưa có tiểu sử'}</p>
-              
-              <div className="d-flex gap-2 mb-4">
-                {Object.entries(profileData?.socialLinks || {}).map(([platform, username]) => {
-                  if (!username) return null;
-                  const { icon: Icon, color, prefix } = SOCIAL_PLATFORMS[platform];
-                  return (
-                    <a
-                      key={platform}
-                      href={prefix + username}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-decoration-none"
-                      style={{ color }}
-                    >
-                      <Icon size={20} />
-                    </a>
-                  );
-                })}
+              <div className="mb-3">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h2 className="mb-1">{profileData?.username || 'Chưa đặt tên'}</h2>
+                    <p className="text-muted mb-2">
+                      <small>{profileData?.email}</small>
+                    </p>
+                  </div>
+                  <div className="d-flex gap-2">
+                    {Object.entries(profileData?.socialLinks || {}).map(([platform, username]) => {
+                      if (!username) return null;
+                      const { icon: Icon, color, prefix } = SOCIAL_PLATFORMS[platform];
+                      return (
+                        <a
+                          key={platform}
+                          href={prefix + username}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-decoration-none"
+                          style={{ color }}
+                        >
+                          <Icon size={20} />
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+                <p className="mb-3">{profileData?.bio || 'Chưa có tiểu sử'}</p>
               </div>
+
             </div>
           </Col>
         </Row>
@@ -244,7 +242,11 @@ const AccountManagement = () => {
 
         <Tab.Content className="px-4 py-4">
           <Tab.Pane eventKey="created">
-            <ItemsGrid referenceId={referenceId} isOwnProfile={isOwnProfile} />
+            <ItemsGrid
+              referenceId={referenceId}
+              isOwnProfile={isOwnProfile}
+              loggedInUserId={loggedInUser?.referenceId}
+            />
           </Tab.Pane>
           <Tab.Pane eventKey="collected">
             <div className="text-center py-5 text-muted">Chưa có vật phẩm nào được sưu tầm</div>
@@ -253,7 +255,9 @@ const AccountManagement = () => {
             <div className="text-center py-5 text-muted">Chưa có vật phẩm yêu thích nào</div>
           </Tab.Pane>
           <Tab.Pane eventKey="activity">
-            <div className="text-center py-5 text-muted">Không có hoạt động gần đây</div>
+            {referenceId && <ItemsForSale referenceId={referenceId}
+              isOwnProfile={isOwnProfile}
+              loggedInUserId={loggedInUser?.referenceId} />}
           </Tab.Pane>
         </Tab.Content>
       </Tab.Container>
@@ -266,9 +270,9 @@ const AccountManagement = () => {
           <Form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label className="d-block mb-2">Ảnh bìa</label>
-              <div 
-                className="cover-preview position-relative mb-2" 
-                style={{ 
+              <div
+                className="cover-preview position-relative mb-2"
+                style={{
                   height: '200px',
                   backgroundImage: `url(${coverPreview || profileData.coverImageUrl || 'https://via.placeholder.com/1200x300'})`,
                   backgroundSize: 'cover',
@@ -368,3 +372,4 @@ const AccountManagement = () => {
 };
 
 export default AccountManagement;
+

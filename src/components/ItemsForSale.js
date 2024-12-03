@@ -3,7 +3,7 @@ import { Alert, Button, Card, Form, Modal, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
 import { UserContext } from '../contexts/UserContext';
 
-const ItemsGrid = ({ referenceId, isOwnProfile, loggedInUserId }) => {
+const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
     const [userData] = useContext(UserContext);
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -736,5 +736,5 @@ const ItemsGrid = ({ referenceId, isOwnProfile, loggedInUserId }) => {
     );
 };
 
-export default ItemsGrid;
+export default ItemsForSale;
 
