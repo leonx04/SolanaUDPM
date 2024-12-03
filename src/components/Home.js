@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'reac
 import { Alert, Button, Card, Carousel, Form, InputGroup, Modal, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { apiKey } from '../api';
+
 // Pagination component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
@@ -101,6 +102,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     </nav>
   );
 };
+
 // Action types for reducer
 const ACTIONS = {
   FETCH_START: 'FETCH_START',
@@ -150,7 +152,7 @@ const MarketplaceHome = ({ referenceId }) => {
     priceRange: { min: '', max: '' },
     searchQuery: '',
     currentPage: 1,
-    itemsPerPage: 6, // Updated default value
+    itemsPerPage: 6,
   });
 
   const productSectionRef = useRef(null);
@@ -159,17 +161,18 @@ const MarketplaceHome = ({ referenceId }) => {
   const filteredItems = useMemo(() => {
     return state.allItems.filter(itemData =>
       itemData.type === 'UniqueAsset' &&
-      itemData.item.priceCents !== null &&
-      itemData.item.priceCents > 0 &&
+      itemData.item.price &&
+      itemData.item.price.naturalAmount !== null &&
+      parseFloat(itemData.item.price.naturalAmount) > 0 &&
       itemData.item.owner.referenceId !== referenceId &&
       itemData.item.name.toLowerCase().includes(state.searchQuery.toLowerCase()) &&
-      (state.priceRange.min === '' || itemData.item.priceCents >= state.priceRange.min * 100) &&
-      (state.priceRange.max === '' || itemData.item.priceCents <= state.priceRange.max * 100)
+      (state.priceRange.min === '' || parseFloat(itemData.item.price.naturalAmount) >= state.priceRange.min) &&
+      (state.priceRange.max === '' || parseFloat(itemData.item.price.naturalAmount) <= state.priceRange.max)
     ).sort((a, b) => {
       if (state.sortOrder === 'highToLow') {
-        return b.item.priceCents - a.item.priceCents;
+        return parseFloat(b.item.price.naturalAmount) - parseFloat(a.item.price.naturalAmount);
       } else if (state.sortOrder === 'lowToHigh') {
-        return a.item.priceCents - b.item.priceCents;
+        return parseFloat(a.item.price.naturalAmount) - parseFloat(b.item.price.naturalAmount);
       }
       return 0;
     });
@@ -178,11 +181,12 @@ const MarketplaceHome = ({ referenceId }) => {
   const featuredItems = useMemo(() => {
     const sortedItems = state.allItems
       .filter(itemData => 
-        itemData.item.priceCents > 0 && 
+        itemData.item.price &&
+        parseFloat(itemData.item.price.naturalAmount) > 0 && 
         itemData.item.owner.referenceId !== referenceId 
       )
       .sort((a, b) => {
-        const priceDiff = a.item.priceCents - b.item.priceCents;
+        const priceDiff = parseFloat(a.item.price.naturalAmount) - parseFloat(b.item.price.naturalAmount);
         if (priceDiff !== 0) return priceDiff;
         return new Date(b.item.createdAt) - new Date(a.item.createdAt);
       });
@@ -194,7 +198,6 @@ const MarketplaceHome = ({ referenceId }) => {
     const endIndex = startIndex + state.itemsPerPage;
     return filteredItems.slice(startIndex, endIndex);
   }, [filteredItems, state.currentPage, state.itemsPerPage]);
-
 
   const fetchAllItems = useCallback(async (signal) => {
     dispatch({ type: ACTIONS.FETCH_START });
@@ -369,11 +372,11 @@ const MarketplaceHome = ({ referenceId }) => {
                 <Card.Body className="d-flex flex-column">
                   <Card.Title className="fw-bold mb-2">{item.name}</Card.Title>
                   <Card.Text className="text-muted small mb-3">
-                  Tác giả: <Link className="text-decoration-none badge badge-success" to={`/account/${item.owner.referenceId}`}> {item.owner.referenceId}</Link>
+                    Tác giả: <Link className="text-decoration-none badge badge-success" to={`/account/${item.owner.referenceId}`}> {item.owner.referenceId}</Link>
                   </Card.Text>
                   <div className="mt-auto d-flex justify-content-between align-items-center">
                     <span className="badge bg-primary rounded-pill px-3 py-2">
-                      {`$${(item.priceCents / 100).toFixed(2)} USDC`}
+                      {`$${parseFloat(item.price.naturalAmount).toFixed(2)} ${item.price.currencyId}`}
                     </span>
                     <Button
                       variant="outline-primary"
@@ -569,7 +572,7 @@ const MarketplaceHome = ({ referenceId }) => {
                   <Card.Body>
                     <p><strong>Tên:</strong> {state.selectedItem.name}</p>
                     <p><strong>Mô tả:</strong> {state.selectedItem.description || 'Không có mô tả'}</p>
-                    <p><strong>Giá:</strong> ${(state.selectedItem.priceCents / 100).toFixed(2)} USDC</p>
+                    <p><strong>Giá:</strong> ${parseFloat(state.selectedItem.price.naturalAmount).toFixed(2)} {state.selectedItem.price.currencyId}</p>
                   </Card.Body>
                 </Card>
 
