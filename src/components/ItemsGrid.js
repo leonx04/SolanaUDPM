@@ -1,13 +1,12 @@
-import React, { useCallback, useEffect, useState, useContext } from 'react';
-import { Alert, Button, Card, Col, Form, Modal, Pagination, Row, Spinner } from 'react-bootstrap';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Card, Form, Modal, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
 import { UserContext } from '../contexts/UserContext';
 
-const ItemsGrid = ({ referenceId, isOwnProfile }) => {
+const ItemsGrid = ({ referenceId, isOwnProfile, loggedInUserId }) => {
     const [userData] = useContext(UserContext);
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [selectedItem, setSelectedItem] = useState(null);
     const [listingPrice, setListingPrice] = useState('');
     const [showListingModal, setShowListingModal] = useState(false);
@@ -21,7 +20,6 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editImageFile, setEditImageFile] = useState(null);
     const [editImagePreview, setEditImagePreview] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(12);
     const [marketFilter, setMarketFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -85,7 +83,6 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
 
     const fetchItems = useCallback(async () => {
         setLoading(true);
-        setError(null);
 
         try {
             let url = `https://api.gameshift.dev/nx/items`;
@@ -95,15 +92,17 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
                 params.append('ownerReferenceId', referenceId);
             }
 
-            switch (marketFilter) {
-                case 'forSale':
-                    params.append('forSale', 'true');
-                    break;
-                case 'notForSale':
-                    params.append('priceCents', 'null');
-                    break;
-                default:
-                    break;
+            if (!isOwnProfile) {
+                switch (marketFilter) {
+                    case 'forSale':
+                        params.append('forSale', 'true');
+                        break;
+                    case 'notForSale':
+                        params.append('priceCents', 'null');
+                        break;
+                    default:
+                        break;
+                }
             }
 
             params.append('limit', itemsPerPage.toString());
@@ -122,19 +121,14 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
             }
 
             const data = await response.json();
-
-            if (marketFilter === 'notForSale') {
-                setItems(data.data.filter(item => item.item.priceCents === null));
-            } else {
-                setItems(data.data || []);
-            }
+            setItems(data.data || []);
 
         } catch (err) {
-            setError('Lỗi khi tải items: ' + err.message);
+            console.error('Lỗi khi tải items:', err.message);
         } finally {
             setLoading(false);
         }
-    }, [referenceId, marketFilter, itemsPerPage]);
+    }, [referenceId, marketFilter, itemsPerPage, isOwnProfile]);
 
     const handleListForSale = async () => {
         if (!selectedItem || !listingPrice) {
@@ -221,7 +215,7 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
 
     const openListingModal = (item) => {
         setSelectedItem(item);
-        setListingPrice('');
+        setListingPrice(item.price?.naturalAmount || '');
         setListingError(null);
         setShowListingModal(true);
     };
@@ -310,25 +304,16 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
         return () => clearInterval(pollInterval);
     }, [fetchItems]);
 
-    const filteredItems = items.filter(itemData => {
-        const { type, item } = itemData;
-
-        if (type === 'Currency') return false;
-
-        const matchesFilter = (marketFilter === 'forSale' && item.priceCents > 0 && item.status === 'Committed') ||
-            (marketFilter === 'notForSale' && (!item.priceCents || item.priceCents === 0)) ||
-            marketFilter === 'all';
-
-        const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.description.toLowerCase().includes(searchTerm.toLowerCase());
-
-        return matchesFilter && matchesSearch;
-    });
-
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const filteredItems = useMemo(() => {
+        return items.filter(itemData => {
+            const item = itemData.item;
+            return itemData.type === 'UniqueAsset' &&
+                   (isOwnProfile || (item.price && parseFloat(item.price.naturalAmount) > 0)) &&
+                   (marketFilter === 'all' ||
+                    (marketFilter === 'forSale' && item.status === 'Committed') ||
+                    (marketFilter === 'notForSale' && item.status !== 'Committed'));
+        });
+    }, [items, marketFilter, isOwnProfile]);
 
     const handleBuyItem = (item) => {
         setSelectedItem(item);
@@ -386,6 +371,112 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
         }
     };
 
+    const renderProductGrid = () => {
+        if (loading) {
+            return (
+                <div className="text-center py-5">
+                    <Spinner animation="border" variant="primary" />
+                    <p className="mt-3">Đang tải dữ liệu...</p>
+                </div>
+            );
+        }
+
+        if (filteredItems.length === 0) {
+            return (
+                <div className="text-center py-5">
+                    <i className="bi bi-inbox-fill text-muted" style={{ fontSize: '4rem' }}></i>
+                    <h2 className="text-muted mt-3">Không có sản phẩm nào</h2>
+                    <p className="text-muted">Hiện tại chưa có sản phẩm nào để hiển thị.</p>
+                    <Button
+                        variant="outline-primary"
+                        onClick={fetchItems}
+                        className="mt-3"
+                    >
+                        <i className="bi bi-arrow-clockwise me-2"></i>
+                        Tải lại
+                    </Button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mb-4">
+                {filteredItems.map((itemData) => {
+                    const item = itemData.item;
+                    const hasPrice = item.price && parseFloat(item.price.naturalAmount) > 0;
+                    return (
+                        <div key={item.id} className="col">
+                            <Card className="h-100 shadow-sm hover-lift">
+                                <Card.Img
+                                    variant="top"
+                                    src={item.imageUrl || '/default-image.jpg'}
+                                    alt={item.name}
+                                    className="card-img-top object-fit-cover"
+                                    style={{ height: '200px' }}
+                                />
+                                <Card.Body className="d-flex flex-column">
+                                    <Card.Title className="fw-bold mb-2">{item.name}</Card.Title>
+                                    <Card.Text className="text-muted small mb-3">
+                                        {item.description}
+                                    </Card.Text>
+                                    <div className="mt-auto d-flex justify-content-between align-items-center">
+                                        {hasPrice && (
+                                            <span className="badge bg-primary rounded-pill px-3 py-2">
+                                                {`$${parseFloat(item.price.naturalAmount).toFixed(2)} ${item.price.currencyId}`}
+                                            </span>
+                                        )}
+                                        {isOwnProfile ? (
+                                            hasPrice ? (
+                                                <Button
+                                                    variant="outline-danger"
+                                                    size="sm"
+                                                    onClick={() => handleCancelSale(item.id)}
+                                                    className="rounded-pill"
+                                                >
+                                                    Hủy bán
+                                                </Button>
+                                            ) : (
+                                                <>
+                                                    <Button
+                                                        variant="outline-primary"
+                                                        size="sm"
+                                                        onClick={() => openEditModal(item)}
+                                                        className="rounded-pill me-2"
+                                                    >
+                                                        Chỉnh sửa
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline-success"
+                                                        size="sm"
+                                                        onClick={() => openListingModal(item)}
+                                                        className="rounded-pill"
+                                                    >
+                                                        Đăng bán
+                                                    </Button>
+                                                </>
+                                            )
+                                        ) : (
+                                            hasPrice && (
+                                                <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    onClick={() => handleBuyItem(itemData)}
+                                                    className="rounded-pill"
+                                                >
+                                                    Mua ngay
+                                                </Button>
+                                            )
+                                        )}
+                                    </div>
+                                </Card.Body>
+                            </Card>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     return (
         <div className="items-grid">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -424,106 +515,7 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
                 />
             </Form.Group>
 
-            {loading ? (
-                <div className="text-center py-5">
-                    <Spinner animation="border" variant="primary" />
-                </div>
-            ) : error ? (
-                <Alert variant="danger">{error}</Alert>
-            ) : filteredItems.length === 0 ? (
-                <div className="text-center py-5 text-muted">Không tìm thấy vật phẩm nào</div>
-            ) : (
-                <>
-                    <Row xs={1} sm={2} md={3} lg={4} className="g-4">
-                        {currentItems.map((itemData, index) => {
-                            const { type, item } = itemData;
-                            if (type === 'Currency') return null;
-
-                            return (
-                                <Col key={index}>
-                                    <Card style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                        <Card.Img
-                                            variant="top"
-                                            src={item.imageUrl || 'https://via.placeholder.com/300'}
-                                            alt={item.name}
-                                            style={{ height: '200px', objectFit: 'cover' }}
-                                        />
-                                        <Card.Body className="d-flex flex-column">
-                                            <Card.Title>{item.name || item.symbol || '-'}</Card.Title>
-                                            <Card.Text className="flex-grow-1">{item.description || '-'}</Card.Text>
-                                            {(item.priceCents > 0 && item.status === 'Committed') ? (
-                                                <div className="d-flex justify-content-between align-items-center mt-auto">
-                                                    <span className="text-success fw-bold">
-                                                        {(item.priceCents / 100).toFixed(2)} USDC
-                                                    </span>
-                                                    {isOwnProfile ? (
-                                                        <Button
-                                                            variant="outline-danger"
-                                                            size="sm"
-                                                            onClick={() => handleCancelSale(item.id)}
-                                                            disabled={isProcessing}
-                                                        >
-                                                            {isProcessing ? 'Đang xử lý...' : 'Hủy bán'}
-                                                        </Button>
-                                                    ) : (
-                                                        <Button
-                                                            variant="primary"
-                                                            size="sm"
-                                                            onClick={() => handleBuyItem(item)}
-                                                        >
-                                                            Mua ngay
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                isOwnProfile && (
-                                                    <div className="d-flex justify-content-between align-items-center mt-auto">
-                                                        <Button
-                                                            variant="outline-primary"
-                                                            size="sm"
-                                                            onClick={() => openEditModal(item)}
-                                                        >
-                                                            Chỉnh sửa
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline-success"
-                                                            size="sm"
-                                                            onClick={() => openListingModal(item)}
-                                                        >
-                                                            Đăng bán
-                                                        </Button>
-                                                    </div>
-                                                )
-                                            )}
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                            );
-                        })}
-                    </Row>
-
-                    <div className="d-flex justify-content-between align-items-center mt-4">
-                        <div>
-                            Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredItems.length)} trong số {filteredItems.length} vật phẩm
-                        </div>
-                        <Pagination>
-                            <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
-                            <Pagination.Prev onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} />
-                            {[...Array(totalPages)].map((_, index) => (
-                                <Pagination.Item
-                                    key={index + 1}
-                                    active={currentPage === index + 1}
-                                    onClick={() => setCurrentPage(index + 1)}
-                                >
-                                    {index + 1}
-                                </Pagination.Item>
-                            ))}
-                            <Pagination.Next onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} />
-                            <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
-                        </Pagination>
-                    </div>
-                </>
-            )}
+            {renderProductGrid()}
 
             <Modal show={showListingModal} onHide={() => setShowListingModal(false)}>
                 <Modal.Header closeButton>
@@ -687,7 +679,7 @@ const ItemsGrid = ({ referenceId, isOwnProfile }) => {
                                 <Card.Body>
                                     <p><strong>Tên:</strong> {selectedItem?.name}</p>
                                     <p><strong>Mô tả:</strong> {selectedItem?.description || 'Không có mô tả'}</p>
-                                    <p><strong>Giá:</strong> ${(selectedItem?.priceCents / 100).toFixed(2)} USDC</p>
+                                    <p><strong>Giá:</strong> ${parseFloat(selectedItem?.price?.naturalAmount || 0).toFixed(2)} {selectedItem?.price?.currencyId}</p>
                                 </Card.Body>
                             </Card>
 

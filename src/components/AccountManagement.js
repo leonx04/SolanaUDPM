@@ -241,7 +241,11 @@ const AccountManagement = () => {
 
         <Tab.Content className="px-4 py-4">
           <Tab.Pane eventKey="created">
-            <ItemsGrid referenceId={referenceId} isOwnProfile={isOwnProfile} />
+            <ItemsGrid 
+                referenceId={referenceId} 
+                isOwnProfile={isOwnProfile} 
+                loggedInUserId={loggedInUser?.referenceId} 
+            />
           </Tab.Pane>
           <Tab.Pane eventKey="collected">
             <div className="text-center py-5 text-muted">Chưa có vật phẩm nào được sưu tầm</div>
