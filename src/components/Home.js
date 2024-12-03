@@ -384,7 +384,7 @@ const MarketplaceHome = ({ referenceId }) => {
                       onClick={() => handleBuyItem(itemData)}
                       className="rounded-pill"
                     >
-                      Mua ngay
+                      Xem
                     </Button>
                   </div>
                 </Card.Body>
@@ -555,7 +555,7 @@ const MarketplaceHome = ({ referenceId }) => {
       {state.selectedItem && (
         <Modal show={!!state.selectedItem} onHide={() => dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM })} size="lg" centered>
           <Modal.Header closeButton>
-            <Modal.Title>Xác nhận mua {state.selectedItem.name}</Modal.Title>
+            <Modal.Title>Xem chi tiết <span className="badge bg-info">{state.selectedItem.name}</span></Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <div className="row">

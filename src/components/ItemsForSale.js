@@ -460,10 +460,10 @@ const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
                                                 <Button
                                                     variant="outline-primary"
                                                     size="sm"
-                                                    onClick={() => handleBuyItem(itemData)}
+                                                    onClick={() => handleBuyItem(item)}
                                                     className="rounded-pill"
                                                 >
-                                                    Mua ngay
+                                                    Xem thêm
                                                 </Button>
                                             )
                                         )}
@@ -662,7 +662,7 @@ const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
 
             <Modal show={showBuyModal} onHide={() => setShowBuyModal(false)} size="lg" centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>Xác nhận mua {selectedItem?.name}</Modal.Title>
+                    <Modal.Title>Xem chi tiết <span className="badge bg-info">{selectedItem?.name}</span></Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <div className="row">
@@ -737,4 +737,3 @@ const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
 };
 
 export default ItemsForSale;
-

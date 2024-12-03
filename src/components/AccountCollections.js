@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Tabs, Tab, Row, Col, Card, Button, Spinner } from 'react-bootstrap';
 import axios from 'axios';
-import { apiKey } from '../api';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Button, Card, Col, Row, Spinner, Tab, Tabs } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { apiKey } from '../api';
 
 const COLLECTION_IDS = {
   art: '35fe7ca2-e2ce-4df5-b24c-5040c6f0d186',
@@ -24,14 +24,15 @@ const AccountCollections = ({ referenceId }) => {
           perPage: 100,
           page: 1,
           collectionId: collectionId,
-          ownerId: referenceId,
         },
         headers: {
           accept: 'application/json',
           'x-api-key': apiKey,
         },
       });
-      setItems(response.data.data);
+      // Filter items based on the referenceId
+      const filteredItems = response.data.data.filter(item => item.item.owner.referenceId === referenceId);
+      setItems(filteredItems);
     } catch (err) {
       console.error('Error fetching items:', err);
       setError('Failed to load items. Please try again.');
@@ -145,4 +146,3 @@ const AccountCollections = ({ referenceId }) => {
 };
 
 export default AccountCollections;
-
