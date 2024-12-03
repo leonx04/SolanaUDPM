@@ -5,6 +5,7 @@ import { Alert, Button, Col, Form, Modal, Nav, Row, Tab } from 'react-bootstrap'
 import { Edit3, Facebook, GitHub, Globe, Youtube } from 'react-feather';
 import { useParams } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
+import AccountCollections from './AccountCollections';
 import ItemsForSale from './ItemsForSale';
 import ItemsGrid from './ItemsGrid';
 
@@ -218,7 +219,6 @@ const AccountManagement = () => {
                 </div>
                 <p className="mb-3">{profileData?.bio || 'Chưa có tiểu sử'}</p>
               </div>
-
             </div>
           </Col>
         </Row>
@@ -249,7 +249,11 @@ const AccountManagement = () => {
             />
           </Tab.Pane>
           <Tab.Pane eventKey="collected">
-            <div className="text-center py-5 text-muted">Chưa có vật phẩm nào được sưu tầm</div>
+            <AccountCollections
+              referenceId={referenceId}
+              isOwnProfile={isOwnProfile}
+              loggedInUserId={loggedInUser?.referenceId}
+            />
           </Tab.Pane>
           <Tab.Pane eventKey="favorited">
             <div className="text-center py-5 text-muted">Chưa có vật phẩm yêu thích nào</div>
@@ -372,4 +376,3 @@ const AccountManagement = () => {
 };
 
 export default AccountManagement;
-
