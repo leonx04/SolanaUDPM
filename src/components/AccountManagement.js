@@ -1,11 +1,12 @@
+import axios from 'axios';
+import { get, getDatabase, ref, update } from "firebase/database";
 import React, { useContext, useEffect, useState } from 'react';
 import { Alert, Button, Col, Form, Modal, Nav, Row, Tab } from 'react-bootstrap';
 import { Edit3, Facebook, GitHub, Globe, Youtube } from 'react-feather';
 import { useParams } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
+import ItemsForSale from './ItemsForSale';
 import ItemsGrid from './ItemsGrid';
-import axios from 'axios';
-import { get, getDatabase, ref, update } from "firebase/database";
 
 const SOCIAL_PLATFORMS = {
   facebook: { icon: Facebook, color: '#1877F2', prefix: '' },
@@ -241,10 +242,10 @@ const AccountManagement = () => {
 
         <Tab.Content className="px-4 py-4">
           <Tab.Pane eventKey="created">
-            <ItemsGrid 
-                referenceId={referenceId} 
-                isOwnProfile={isOwnProfile} 
-                loggedInUserId={loggedInUser?.referenceId} 
+            <ItemsGrid
+              referenceId={referenceId}
+              isOwnProfile={isOwnProfile}
+              loggedInUserId={loggedInUser?.referenceId}
             />
           </Tab.Pane>
           <Tab.Pane eventKey="collected">
@@ -254,7 +255,9 @@ const AccountManagement = () => {
             <div className="text-center py-5 text-muted">Chưa có vật phẩm yêu thích nào</div>
           </Tab.Pane>
           <Tab.Pane eventKey="activity">
-            <div className="text-center py-5 text-muted">Không có hoạt động gần đây</div>
+            {referenceId && <ItemsForSale referenceId={referenceId}
+              isOwnProfile={isOwnProfile}
+              loggedInUserId={loggedInUser?.referenceId} />}
           </Tab.Pane>
         </Tab.Content>
       </Tab.Container>
