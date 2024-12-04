@@ -14,7 +14,7 @@ import './App.css';
 import AccountManagement from "./components/AccountManagement";
 import AuthForm from "./components/AuthForm";
 import Home from "./components/Home";
-import MyNfts from "./components/MyNfts";
+// import MyNfts from "./components/MyNfts";
 import PurchaseHistory from "./components/PurchaseHistory";
 import { UserContext } from './contexts/UserContext';
 import { getDatabase, ref, onValue } from "firebase/database";
@@ -325,15 +325,6 @@ function App() {
                       Trang chủ
                     </NavLink>
                     <NavLink
-                      to="/my-nfts"
-                      className={({ isActive }) =>
-                        `nav-link ${isActive ? 'active' : ''}`}
-                      onClick={closeSidebarOnMobile}
-                    >
-                      <i className="bi bi-collection me-2"></i>
-                      NFT của tôi
-                    </NavLink>
-                    <NavLink
                       to="/purchase-history"
                       className={({ isActive }) =>
                         `nav-link ${isActive ? 'active' : ''}`}
@@ -365,7 +356,7 @@ function App() {
               {/* Main Content */}
               <div className={`main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
                 {/* Top Navigation */}
-                <nav className="top-nav">
+                <nav className="top-nav fixed-top"> {/* Update 1: Added fixed-top */}
                   <div className="d-flex align-items-center w-100">
                     {/* Nút mở sidebar */}
                     <button
@@ -476,11 +467,10 @@ function App() {
                 </nav>
 
                 {/* Main Content Area */}
-                <div className="content-area ms-4">
+                <div className="content-area ms-4 mt-5 pt-3"> {/* Update 2: Added mt-5 pt-3 */}
                   <Routes>
                     <Route path="/" element={<Navigate to="/home" replace />} />
                     <Route path="/home" element={<Home referenceId={userData?.referenceId} />} />
-                    <Route path="/my-nfts" element={<MyNfts referenceId={userData?.referenceId} />} />
                     <Route path="/purchase-history" element={<PurchaseHistory referenceId={userData?.referenceId} />} />
                     <Route
                       path="/account"
@@ -537,4 +527,3 @@ function App() {
 }
 
 export default App;
-

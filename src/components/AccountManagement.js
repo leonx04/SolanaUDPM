@@ -8,6 +8,7 @@ import { UserContext } from '../contexts/UserContext';
 import AccountCollections from './AccountCollections';
 import ItemsForSale from './ItemsForSale';
 import ItemsGrid from './ItemsGrid';
+import CreateItemModal from './CreateItemModal';
 
 const SOCIAL_PLATFORMS = {
   facebook: { icon: Facebook, color: '#1877F2', prefix: '' },
@@ -33,6 +34,7 @@ const AccountManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showCreateItemModal, setShowCreateItemModal] = useState(false);
 
   const isOwnProfile = loggedInUser?.referenceId === referenceId;
 
@@ -239,6 +241,15 @@ const AccountManagement = () => {
 
         <Tab.Content className="px-4 py-4">
           <Tab.Pane eventKey="created">
+            {isOwnProfile && (
+              <Button
+                variant="primary"
+                className="mb-3"
+                onClick={() => setShowCreateItemModal(true)}
+              >
+                Tạo vật phẩm mới
+              </Button>
+            )}
             <ItemsGrid
               referenceId={referenceId}
               isOwnProfile={isOwnProfile}
@@ -365,6 +376,15 @@ const AccountManagement = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      <CreateItemModal
+        show={showCreateItemModal}
+        onHide={() => setShowCreateItemModal(false)}
+        referenceId={referenceId}
+        onSuccess={() => {
+          setShowCreateItemModal(false);
+          // Optionally, you can refresh the items grid here
+        }}
+      />
     </div>
   );
 };

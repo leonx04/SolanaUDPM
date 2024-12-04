@@ -19,17 +19,20 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('default');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(9); // 3 items per row, 3 rows
+  const [itemsPerPage] = useState(9);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [buyError, setBuyError] = useState(null);
   const [buyLoading, setBuyLoading] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState(0);
+  const [showListingModal, setShowListingModal] = useState(false);
+  const [listingPrice, setListingPrice] = useState('');
+  const [listingError, setListingError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchItems = useCallback(async (collectionId, force = false) => {
     const now = Date.now();
     if (!force && now - lastFetchTime < 5000) {
-      // If not forced and less than 5 seconds since last fetch, skip
       return;
     }
 
@@ -47,10 +50,8 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
           'x-api-key': apiKey,
         },
       });
-      // Filter items based on the referenceId
       const filteredItems = response.data.data.filter(item => item.item.owner.referenceId === referenceId);
       
-      // Check if data has changed
       const hasDataChanged = JSON.stringify(filteredItems) !== JSON.stringify(items);
       
       if (hasDataChanged) {
@@ -68,10 +69,9 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
   useEffect(() => {
     fetchItems(activeCollection, true);
     
-    // Set up polling for real-time updates
     const intervalId = setInterval(() => {
       fetchItems(activeCollection);
-    }, 10000); // Poll every 10 seconds
+    }, 10000);
 
     return () => clearInterval(intervalId);
   }, [activeCollection, fetchItems]);
@@ -111,10 +111,94 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
     setBuyError(null);
   };
 
-  const handleListForSale = (item) => {
-    // Placeholder for listing item for sale
-    console.log('Listing item for sale:', item);
-    // TODO: Implement the actual listing logic
+  const handleListForSale = async () => {
+    if (!selectedItem || !listingPrice) {
+      setListingError('Vui lòng nhập giá hợp lệ');
+      return;
+    }
+
+    setIsProcessing(true);
+    setListingError(null);
+
+    try {
+      const response = await fetch(
+        `https://api.gameshift.dev/nx/unique-assets/${selectedItem.id}/list-for-sale`,
+        {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'content-type': 'application/json',
+            'x-api-key': apiKey
+          },
+          body: JSON.stringify({
+            price: {
+              currencyId: 'USDC',
+              naturalAmount: listingPrice
+            }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Không thể liệt kê tài sản');
+      }
+
+      const data = await response.json();
+
+      if (data.consentUrl) {
+        window.open(data.consentUrl, '_blank', 'noopener,noreferrer');
+      }
+
+      fetchItems(activeCollection, true);
+    } catch (err) {
+      setListingError(err.message);
+    } finally {
+      setIsProcessing(false);
+      setShowListingModal(false);
+    }
+  };
+
+  const handleCancelSale = async (itemId) => {
+    setIsProcessing(true);
+    setListingError(null);
+
+    try {
+      const response = await fetch(
+        `https://api.gameshift.dev/nx/unique-assets/${itemId}/cancel-listing`,
+        {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'x-api-key': apiKey
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Không thể hủy bán tài sản');
+      }
+
+      const data = await response.json();
+
+      if (data.consentUrl) {
+        window.open(data.consentUrl, '_blank', 'noopener,noreferrer');
+      }
+
+      fetchItems(activeCollection, true);
+    } catch (err) {
+      setListingError(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const openListingModal = (item) => {
+    setSelectedItem(item);
+    setListingPrice(item.price?.naturalAmount || '');
+    setListingError(null);
+    setShowListingModal(true);
   };
 
   const buyItemWithPhantomWallet = async () => {
@@ -127,7 +211,6 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
         throw new Error("Vui lòng kết nối ví Phantom trước khi mua");
       }
 
-      // Ensure the buyer is using their own account
       const buyerId = userData.referenceId;
 
       if (buyerId === selectedItem.owner.referenceId) {
@@ -191,6 +274,7 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
       <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
         {currentItems.map((itemData) => {
           const item = itemData.item;
+          const hasPrice = item.price && parseFloat(item.price.naturalAmount) > 0;
           return (
             <div key={item.id} className="col">
               <Card className="h-100 shadow-sm hover-lift">
@@ -207,7 +291,7 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
                     Tác giả: <Link className="text-decoration-none badge badge-success" to={`/account/${item.owner.referenceId}`}>{item.owner.referenceId}</Link>
                   </Card.Text>
                   <div className="mt-auto d-flex justify-content-between align-items-center">
-                    {item.price ? (
+                    {hasPrice ? (
                       <>
                         <span className="badge bg-primary rounded-pill px-3 py-2">
                           ${parseFloat(item.price.naturalAmount).toFixed(2)} {item.price.currencyId}
@@ -216,6 +300,7 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
                           <Button
                             variant="outline-danger"
                             size="sm"
+                            onClick={() => handleCancelSale(item.id)}
                             className="rounded-pill"
                           >
                             Hủy bán
@@ -240,7 +325,7 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
                           <Button
                             variant="outline-success"
                             size="sm"
-                            onClick={() => handleListForSale(item)}
+                            onClick={() => openListingModal(item)}
                             className="rounded-pill"
                           >
                             Đăng bán
@@ -417,6 +502,54 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
             ) : (
               'Xác nhận mua'
             )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showListingModal} onHide={() => setShowListingModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Đăng bán vật phẩm</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {listingError && (
+            <Alert variant="danger">{listingError}</Alert>
+          )}
+          <Form>
+            <Form.Group>
+              <Form.Label>Tên vật phẩm</Form.Label>
+              <Form.Control
+                type="text"
+                value={selectedItem?.name || ''}
+                readOnly
+              />
+            </Form.Group>
+            <Form.Group className="mt-3">
+              <Form.Label>Giá (USDC)</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Nhập giá (USDC)"
+                value={listingPrice}
+                onChange={(e) => setListingPrice(e.target.value)}
+                min="0.01"
+                step="0.01"
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowListingModal(false)}
+            disabled={isProcessing}
+          >
+            Hủy
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleListForSale}
+            disabled={isProcessing || !listingPrice}
+          >
+            {isProcessing ? 'Đang xử lý...' : 'Đăng bán'}
           </Button>
         </Modal.Footer>
       </Modal>
