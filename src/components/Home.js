@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useReducer, useRef } from 'react';
-import { Alert, Button, Card, Carousel, Spinner, OverlayTrigger, Tooltip, Modal } from 'react-bootstrap';
+import { Alert, Button, Card, Carousel, Spinner, OverlayTrigger, Tooltip, Modal, Container, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { apiKey } from '../api';
 import axios from 'axios';
@@ -296,7 +296,7 @@ const MarketplaceHome = ({ referenceId }) => {
     <div className="marketplace-home">
       <header className="hero-section text-center py-5 mb-5">
         <h1 className="display-4 fw-bold text-primary mb-3">Khám phá NFT độc đáo</h1>
-        <p className="lead mb-4">Sở hữu những tác phẩm nghệ thuật số độc nhất và tiên phong trong thế giới metaverse.</p>
+        <p className="lead mb-4">Sở hữu những tác phẩm nghệ thuật số độc nhất và tiên phong trong thế giới ảo.</p>
         <Button variant="primary" size="lg" className="rounded-pill px-4 py-2" onClick={scrollToProducts}>Khám phá ngay</Button>
       </header>
 
@@ -316,15 +316,81 @@ const MarketplaceHome = ({ referenceId }) => {
           <Carousel.Item>
             <img
               className="d-block w-100"
-              src="https://static.vecteezy.com/system/resources/previews/023/325/782/non_2x/futuristic-digital-technology-metaverse-nft-virtual-reality-concept-young-girl-wearing-vr-virtual-reality-goggle-experiencing-virtual-world-glitch-effect-vector.jpg"
-              alt="Trải nghiệm Metaverse"
+              src="https://static.vecteezy.com/system/resources/previews/023/325/782/non_2x/futuristic-digital-technology--nft-virtual-reality-concept-young-girl-wearing-vr-virtual-reality-goggle-experiencing-virtual-world-glitch-effect-vector.jpg"
+              alt="Trải nghiệm mua bán NFT "
             />
             <Carousel.Caption>
-              <h3>Trải nghiệm Metaverse</h3>
+              <h3>Trải nghiệm mua bán NFT </h3>
               <p>Bước vào thế giới ảo với NFT của bạn.</p>
             </Carousel.Caption>
           </Carousel.Item>
         </Carousel>
+      </div>
+
+      {/* New: How It Works Section */}
+      <section className="how-it-works-section py-5">
+        <Container>
+          <h2 className="text-center fw-bold mb-5">Cách thức hoạt động</h2>
+          <Row className="g-4">
+            {[
+              { title: "Kết nối ví", description: "Liên kết ví Phantom của bạn với tài khoản.", icon: "wallet2" },
+              { title: "Khám phá NFT", description: "Tìm kiếm và chọn NFT yêu thích của bạn.", icon: "search" },
+              { title: "Đặt giá mua", description: "Chọn NFT bạn yêu thích và tiến hành mua.", icon: "cash-coin" },
+              { title: "Hoàn tất giao dịch", description: "Xác nhận và nhận NFT vào ví của bạn.", icon: "check-circle" }
+            ].map((step, index) => (
+              <Col key={index} md={3}>
+                <Card className="h-100 text-center border-0 shadow-sm">
+                  <Card.Body>
+                    <div className="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '60px', height: '60px' }}>
+                      <i className={`bi bi-${step.icon} fs-4`}></i>
+                    </div>
+                    <h5 className="card-title fw-bold">{step.title}</h5>
+                    <p className="card-text">{step.description}</p>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Container>
+      </section>
+
+      <div className="container mb-5">
+        <FeaturedUsers />
+      </div>
+
+
+
+      <section className="benefits-section py-5">
+        <div className="container">
+          <h2 className="text-center fw-bold mb-5">Lợi ích của NFT Marketplace</h2>
+          <div className="row g-4">
+            {[
+              { title: "Sở hữu độc quyền", description: "Xác nhận quyền sở hữu duy nhất của tác phẩm nghệ thuật số." },
+              { title: "Giao dịch an toàn", description: "Sử dụng công nghệ blockchain để đảm bảo tính minh bạch và bảo mật." },
+              { title: "Hỗ trợ nghệ sĩ", description: "Tạo cơ hội cho nghệ sĩ kiếm thu nhập trực tiếp từ tác phẩm của họ." },
+              { title: "Đầu tư tiềm năng", description: "Cơ hội đầu tư vào tài sản số có giá trị tăng trưởng." }
+            ].map((benefit, index) => (
+              <div key={index} className="col-md-3">
+                <Card className="h-100 text-center border-0 shadow-sm">
+                  <Card.Body>
+                    <i className={`bi bi-${['shield-check', 'lock', 'palette', 'graph-up-arrow'][index]} display-4 mb-3 text-primary`}></i>
+                    <h5 className="card-title fw-bold">{benefit.title}</h5>
+                    <p className="card-text">{benefit.description}</p>
+                  </Card.Body>
+                </Card>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      <div className="container mb-5" ref={productSectionRef}>
+        <h2 className="text-center fw-bold mb-4">Sản phẩm nổi bật</h2>
+        {renderProductGrid(state.featuredItems)}
+        <div className="text-center mt-4">
+          <Button as={Link} to="/all-items" variant="outline-primary">Xem tất cả sản phẩm</Button>
+        </div>
       </div>
 
       <section className="roadmap-section py-5 bg-light">
@@ -351,41 +417,7 @@ const MarketplaceHome = ({ referenceId }) => {
         </div>
       </section>
 
-      <div className="container mb-5">
-        <FeaturedUsers />
-      </div>
 
-      <section className="benefits-section py-5">
-        <div className="container">
-          <h2 className="text-center fw-bold mb-5">Lợi ích của NFT Marketplace</h2>
-          <div className="row g-4">
-            {[
-              { title: "Sở hữu độc quyền", description: "Xác nhận quyền sở hữu duy nhất của tác phẩm nghệ thuật số." },
-              { title: "Giao dịch an toàn", description: "Sử dụng công nghệ blockchain để đảm bảo tính minh bạch và bảo mật." },
-              { title: "Hỗ trợ nghệ sĩ", description: "Tạo cơ hội cho nghệ sĩ kiếm thu nhập trực tiếp từ tác phẩm của họ." },
-              { title: "Đầu tư tiềm năng", description: "Cơ hội đầu tư vào tài sản số có giá trị tăng trưởng." }
-            ].map((benefit, index) => (
-              <div key={index} className="col-md-3">
-                <Card className="h-100 text-center border-0 shadow-sm">
-                  <Card.Body>
-                    <i className={`bi bi-${['shield-check', 'lock', 'palette', 'graph-up-arrow'][index]} display-4 mb-3 text-primary`}></i>
-                    <h5 className="card-title fw-bold">{benefit.title}</h5>
-                    <p className="card-text">{benefit.description}</p>
-                  </Card.Body>
-                </Card>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div className="container mb-5" ref={productSectionRef}>
-        <h2 className="text-center fw-bold mb-4">Sản phẩm nổi bật</h2>
-        {renderProductGrid(state.featuredItems)}
-        <div className="text-center mt-4">
-          <Button as={Link} to="/all-items" variant="outline-primary">Xem tất cả sản phẩm</Button>
-        </div>
-      </div>
       {state.selectedItem && (
         <Modal show={!!state.selectedItem} onHide={() => dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM })} size="lg" centered>
           <Modal.Header closeButton>
@@ -467,3 +499,4 @@ const MarketplaceHome = ({ referenceId }) => {
 };
 
 export default MarketplaceHome;
+
