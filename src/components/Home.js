@@ -102,7 +102,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     </nav>
   );
 };
-
 // Action types for reducer
 const ACTIONS = {
   FETCH_START: 'FETCH_START',
@@ -113,6 +112,7 @@ const ACTIONS = {
   CLEAR_SELECTED_ITEM: 'CLEAR_SELECTED_ITEM',
   SET_BUY_LOADING: 'SET_BUY_LOADING',
   SET_BUY_ERROR: 'SET_BUY_ERROR',
+  SET_ACTIVE_COLLECTION: 'SET_ACTIVE_COLLECTION',
 };
 
 // Reducer function
@@ -134,9 +134,16 @@ const reducer = (state, action) => {
       return { ...state, buyLoading: action.payload };
     case ACTIONS.SET_BUY_ERROR:
       return { ...state, buyError: action.payload };
+    case ACTIONS.SET_ACTIVE_COLLECTION:
+      return { ...state, activeCollection: action.payload };
     default:
       return state;
   }
+};
+
+const COLLECTION_IDS = {
+  art: '35fe7ca2-e2ce-4df5-b24c-5040c6f0d186',
+  images: 'fba8b4c9-5a04-466c-b609-6532cbd6d9d1',
 };
 
 const MarketplaceHome = ({ referenceId }) => {
@@ -153,6 +160,7 @@ const MarketplaceHome = ({ referenceId }) => {
     searchQuery: '',
     currentPage: 1,
     itemsPerPage: 6,
+    activeCollection: COLLECTION_IDS.art,
   });
 
   const productSectionRef = useRef(null);
@@ -209,7 +217,7 @@ const MarketplaceHome = ({ referenceId }) => {
           params: {
             perPage: 100,
             page: page,
-            collectionId: '35fe7ca2-e2ce-4df5-b24c-5040c6f0d186',
+            collectionId: state.activeCollection,
           },
           headers: {
             accept: 'application/json',
@@ -239,7 +247,7 @@ const MarketplaceHome = ({ referenceId }) => {
         console.error('Fetch error:', err);
       }
     }
-  }, []);
+  }, [state.activeCollection]);
 
   const handlePeriodicRefresh = useCallback(async () => {
     const controller = new AbortController();
@@ -356,7 +364,7 @@ const MarketplaceHome = ({ referenceId }) => {
     }
 
     return (
-      <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 mb-4">
+      <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mb-4">
         {items.map((itemData) => {
           const item = itemData.item;
           return (
@@ -480,6 +488,22 @@ const MarketplaceHome = ({ referenceId }) => {
               <i className={`bi ${state.loading ? 'bi-hourglass-split' : 'bi-arrow-clockwise'}`}></i>
             </Button>
           </div>
+        </div>
+
+        <div className="mb-4">
+          <Button
+            variant={state.activeCollection === COLLECTION_IDS.art ? "primary" : "outline-primary"}
+            className="me-2"
+            onClick={() => dispatch({ type: ACTIONS.SET_ACTIVE_COLLECTION, payload: COLLECTION_IDS.art })}
+          >
+            Bộ sưu tập nghệ thuật
+          </Button>
+          <Button
+            variant={state.activeCollection === COLLECTION_IDS.images ? "primary" : "outline-primary"}
+            onClick={() => dispatch({ type: ACTIONS.SET_ACTIVE_COLLECTION, payload: COLLECTION_IDS.images })}
+          >
+            Bộ sưu tập hình ảnh
+          </Button>
         </div>
 
         <Form className="mb-4">
@@ -631,4 +655,3 @@ const MarketplaceHome = ({ referenceId }) => {
 };
 
 export default MarketplaceHome;
-

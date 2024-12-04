@@ -230,10 +230,7 @@ const AccountManagement = () => {
             <Nav.Link eventKey="created">Đã tạo</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link eventKey="collected">Đã sưu tầm</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="favorited">Yêu thích</Nav.Link>
+            <Nav.Link eventKey="collected">Bộ sưu tập</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link eventKey="activity">Hoạt động</Nav.Link>
@@ -254,9 +251,6 @@ const AccountManagement = () => {
               isOwnProfile={isOwnProfile}
               loggedInUserId={loggedInUser?.referenceId}
             />
-          </Tab.Pane>
-          <Tab.Pane eventKey="favorited">
-            <div className="text-center py-5 text-muted">Chưa có vật phẩm yêu thích nào</div>
           </Tab.Pane>
           <Tab.Pane eventKey="activity">
             {referenceId && <ItemsForSale referenceId={referenceId}
