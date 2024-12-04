@@ -389,7 +389,7 @@ const MarketplaceHome = ({ referenceId }) => {
                       onClick={() => handleBuyItem(itemData)}
                       className="rounded-pill"
                     >
-                      Xem
+                      Xem chi tiết
                     </Button>
                   </div>
                 </Card.Body>
@@ -641,7 +641,7 @@ const MarketplaceHome = ({ referenceId }) => {
                   Đang xử lý...
                 </>
               ) : (
-                'Xác nhận mua'
+                'Mua ngay'
               )}
             </Button>
           </Modal.Footer>

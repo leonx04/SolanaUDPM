@@ -426,7 +426,7 @@ const AllItems = ({ referenceId }) => {
                   Đang xử lý...
                 </>
               ) : (
-                'Xác nhận mua'
+                'Mua ngay'
               )}
             </Button>
           </Modal.Footer>

@@ -727,7 +727,7 @@ const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
                                 Đang xử lý...
                             </>
                         ) : (
-                            'Xác nhận mua'
+                            'Mua ngay'
                         )}
                     </Button>
                 </Modal.Footer>
