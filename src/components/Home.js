@@ -1,118 +1,20 @@
-import axios from 'axios';
-import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import { Alert, Button, Card, Carousel, Form, InputGroup, Modal, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import React, { useCallback, useEffect, useReducer, useRef } from 'react';
+import { Alert, Button, Card, Carousel, Spinner, OverlayTrigger, Tooltip, Modal } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { apiKey } from '../api';
+import axios from 'axios';
+import FeaturedUsers from './FeaturedUsers';
 
-// Pagination component
-const Pagination = ({ currentPage, totalPages, onPageChange }) => {
-  if (totalPages <= 1) return null;
-
-  const getPageNumbers = () => {
-    const maxPagesToShow = 5;
-
-    if (totalPages <= maxPagesToShow) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
-
-    const leftSide = Math.floor((maxPagesToShow - 3) / 2);
-
-    if (currentPage <= maxPagesToShow - 2) {
-      return [
-        ...Array.from({ length: maxPagesToShow - 1 }, (_, i) => i + 1),
-        '...',
-        totalPages
-      ];
-    }
-
-    if (currentPage > totalPages - (maxPagesToShow - 2)) {
-      return [
-        1,
-        '...',
-        ...Array.from({ length: maxPagesToShow - 1 }, (_, i) =>
-          totalPages - (maxPagesToShow - 2) + i
-        )
-      ];
-    }
-
-    return [
-      1,
-      '...',
-      ...Array.from({ length: maxPagesToShow - 2 }, (_, i) =>
-        currentPage - leftSide + i
-      ),
-      '...',
-      totalPages
-    ];
-  };
-
-  const pageNumbers = getPageNumbers();
-
-  return (
-    <nav>
-      <ul className="pagination mb-0 justify-content-center">
-        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            &#10094; Trước
-          </Button>
-        </li>
-
-        {pageNumbers.map((page, index) => {
-          if (page === '...') {
-            return (
-              <li key={`ellipsis-${index}`} className="page-item">
-                <span className="page-link text-muted">...</span>
-              </li>
-            );
-          }
-
-          return (
-            <li
-              key={page}
-              className={`page-item ${currentPage === page ? 'active' : ''}`}
-            >
-              <Button
-                variant={currentPage === page ? 'primary' : 'outline-secondary'}
-                size="sm"
-                onClick={() => onPageChange(page)}
-                className="mx-1"
-              >
-                {page}
-              </Button>
-            </li>
-          );
-        })}
-
-        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Tiếp &#10095;
-          </Button>
-        </li>
-      </ul>
-    </nav>
-  );
-};
 // Action types for reducer
 const ACTIONS = {
   FETCH_START: 'FETCH_START',
   FETCH_SUCCESS: 'FETCH_SUCCESS',
   FETCH_ERROR: 'FETCH_ERROR',
-  UPDATE_FILTERS: 'UPDATE_FILTERS',
   SET_SELECTED_ITEM: 'SET_SELECTED_ITEM',
   CLEAR_SELECTED_ITEM: 'CLEAR_SELECTED_ITEM',
   SET_BUY_LOADING: 'SET_BUY_LOADING',
   SET_BUY_ERROR: 'SET_BUY_ERROR',
-  SET_ACTIVE_COLLECTION: 'SET_ACTIVE_COLLECTION',
+  SET_FEATURED_ITEMS: 'SET_FEATURED_ITEMS',
 };
 
 // Reducer function
@@ -124,8 +26,6 @@ const reducer = (state, action) => {
       return { ...state, loading: false, allItems: action.payload, lastFetchTime: Date.now() };
     case ACTIONS.FETCH_ERROR:
       return { ...state, loading: false, error: action.payload };
-    case ACTIONS.UPDATE_FILTERS:
-      return { ...state, ...action.payload };
     case ACTIONS.SET_SELECTED_ITEM:
       return { ...state, selectedItem: action.payload };
     case ACTIONS.CLEAR_SELECTED_ITEM:
@@ -134,8 +34,8 @@ const reducer = (state, action) => {
       return { ...state, buyLoading: action.payload };
     case ACTIONS.SET_BUY_ERROR:
       return { ...state, buyError: action.payload };
-    case ACTIONS.SET_ACTIVE_COLLECTION:
-      return { ...state, activeCollection: action.payload };
+    case ACTIONS.SET_FEATURED_ITEMS:
+      return { ...state, featuredItems: action.payload };
     default:
       return state;
   }
@@ -149,75 +49,28 @@ const COLLECTION_IDS = {
 const MarketplaceHome = ({ referenceId }) => {
   const [state, dispatch] = useReducer(reducer, {
     allItems: [],
+    featuredItems: [],
     loading: true,
     error: null,
     selectedItem: null,
     buyLoading: false,
     buyError: null,
     lastFetchTime: Date.now(),
-    sortOrder: 'default',
-    priceRange: { min: '', max: '' },
-    searchQuery: '',
-    currentPage: 1,
-    itemsPerPage: 6,
-    activeCollection: COLLECTION_IDS.art,
   });
 
   const productSectionRef = useRef(null);
-  const allProductsSectionRef = useRef(null);
-
-  const filteredItems = useMemo(() => {
-    return state.allItems.filter(itemData =>
-      itemData.type === 'UniqueAsset' &&
-      itemData.item.price &&
-      itemData.item.price.naturalAmount !== null &&
-      parseFloat(itemData.item.price.naturalAmount) > 0 &&
-      itemData.item.owner.referenceId !== referenceId &&
-      itemData.item.name.toLowerCase().includes(state.searchQuery.toLowerCase()) &&
-      (state.priceRange.min === '' || parseFloat(itemData.item.price.naturalAmount) >= state.priceRange.min) &&
-      (state.priceRange.max === '' || parseFloat(itemData.item.price.naturalAmount) <= state.priceRange.max)
-    ).sort((a, b) => {
-      if (state.sortOrder === 'highToLow') {
-        return parseFloat(b.item.price.naturalAmount) - parseFloat(a.item.price.naturalAmount);
-      } else if (state.sortOrder === 'lowToHigh') {
-        return parseFloat(a.item.price.naturalAmount) - parseFloat(b.item.price.naturalAmount);
-      }
-      return 0;
-    });
-  }, [state.allItems, referenceId, state.searchQuery, state.priceRange, state.sortOrder]);
-
-  const featuredItems = useMemo(() => {
-    const sortedItems = state.allItems
-      .filter(itemData =>
-        itemData.item.price &&
-        parseFloat(itemData.item.price.naturalAmount) > 0 &&
-        itemData.item.owner.referenceId !== referenceId
-      )
-      .sort((a, b) => {
-        const priceDiff = parseFloat(a.item.price.naturalAmount) - parseFloat(b.item.price.naturalAmount);
-        if (priceDiff !== 0) return priceDiff;
-        return new Date(b.item.createdAt) - new Date(a.item.createdAt);
-      });
-    return sortedItems.slice(0, 3);
-  }, [state.allItems, referenceId]);
-
-  const paginatedItems = useMemo(() => {
-    const startIndex = (state.currentPage - 1) * state.itemsPerPage;
-    const endIndex = startIndex + state.itemsPerPage;
-    return filteredItems.slice(startIndex, endIndex);
-  }, [filteredItems, state.currentPage, state.itemsPerPage]);
 
   const fetchAllItems = useCallback(async (signal) => {
     dispatch({ type: ACTIONS.FETCH_START });
 
     try {
-      const fetchPage = async (page) => {
+      const fetchPage = async (page, collectionId) => {
         const response = await axios.get('https://api.gameshift.dev/nx/items', {
           signal,
           params: {
             perPage: 100,
             page: page,
-            collectionId: state.activeCollection,
+            collectionId: collectionId,
           },
           headers: {
             accept: 'application/json',
@@ -228,17 +81,43 @@ const MarketplaceHome = ({ referenceId }) => {
       };
 
       let allFetchedItems = [];
-      let page = 1;
-      let totalPages = 1;
+      for (const collectionId of Object.values(COLLECTION_IDS)) {
+        let page = 1;
+        let totalPages = 1;
 
-      while (page <= totalPages) {
-        const { data, meta } = await fetchPage(page);
-        allFetchedItems.push(...data);
-        totalPages = meta.totalPages;
-        page++;
+        while (page <= totalPages) {
+          const { data, meta } = await fetchPage(page, collectionId);
+          allFetchedItems.push(...data);
+          totalPages = meta.totalPages;
+          page++;
+        }
       }
 
       dispatch({ type: ACTIONS.FETCH_SUCCESS, payload: allFetchedItems });
+
+      // Set featured items
+      const featuredItems = allFetchedItems
+        .filter(itemData =>
+          itemData.type === 'UniqueAsset' &&
+          itemData.item.price &&
+          itemData.item.price.naturalAmount !== null &&
+          parseFloat(itemData.item.price.naturalAmount) > 0
+        )
+        .sort((a, b) => {
+          const priceA = parseFloat(a.item.price.naturalAmount);
+          const priceB = parseFloat(b.item.price.naturalAmount);
+          const dateA = new Date(a.item.createdAt);
+          const dateB = new Date(b.item.createdAt);
+
+          if (priceA !== priceB) {
+            return priceA - priceB; // Sort by price (lowest first)
+          }
+          return dateB - dateA; // If prices are equal, sort by date (newest first)
+        })
+        .slice(0, 6); // Limit to 6 items
+
+      dispatch({ type: ACTIONS.SET_FEATURED_ITEMS, payload: featuredItems });
+
     } catch (err) {
       if (axios.isCancel(err)) {
         console.log('Request canceled', err.message);
@@ -247,7 +126,7 @@ const MarketplaceHome = ({ referenceId }) => {
         console.error('Fetch error:', err);
       }
     }
-  }, [state.activeCollection]);
+  }, []);
 
   const handlePeriodicRefresh = useCallback(async () => {
     const controller = new AbortController();
@@ -268,19 +147,6 @@ const MarketplaceHome = ({ referenceId }) => {
     fetchAllItems(controller.signal);
     return () => controller.abort();
   }, [fetchAllItems]);
-
-  const handleManualRefresh = async () => {
-    await fetchAllItems();
-    dispatch({
-      type: ACTIONS.UPDATE_FILTERS,
-      payload: {
-        searchQuery: '',
-        sortOrder: 'default',
-        priceRange: { min: '', max: '' },
-        currentPage: 1
-      }
-    });
-  };
 
   const handleBuyItem = (itemData) => {
     dispatch({ type: ACTIONS.SET_SELECTED_ITEM, payload: itemData.item });
@@ -331,7 +197,6 @@ const MarketplaceHome = ({ referenceId }) => {
     productSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-
   const renderProductGrid = (items) => {
     if (state.loading) {
       return (
@@ -350,7 +215,7 @@ const MarketplaceHome = ({ referenceId }) => {
           <p className="text-muted">Hiện tại chưa có sản phẩm nào để hiển thị.</p>
           <Button
             variant="outline-primary"
-            onClick={handleManualRefresh}
+            onClick={() => fetchAllItems()}
             className="mt-3"
           >
             <i className="bi bi-arrow-clockwise me-2"></i>
@@ -379,7 +244,7 @@ const MarketplaceHome = ({ referenceId }) => {
                   <Card.Text className="text-muted small mb-3">
                     Tác giả:
                     <OverlayTrigger
-                      placement="top" // Vị trí của tooltip: top, right, bottom, left
+                      placement="top"
                       overlay={
                         <Tooltip id={`tooltip-${item.owner.referenceId}`}>
                           Nhấn để xem trang cá nhân của tác giả
@@ -451,14 +316,6 @@ const MarketplaceHome = ({ referenceId }) => {
         </Carousel>
       </div>
 
-      <div className="container mb-5" ref={productSectionRef}>
-        <h2 className="text-center fw-bold mb-4">Sản phẩm nổi bật</h2>
-        {renderProductGrid(featuredItems)}
-        <div className="text-center mt-4">
-          <Button as={Link} to="/all-items" variant="outline-primary">Xem tất cả sản phẩm</Button>
-        </div>
-      </div>
-
       <section className="roadmap-section py-5 bg-light">
         <div className="container">
           <h2 className="text-center fw-bold mb-5">Lộ trình phát triển</h2>
@@ -483,111 +340,41 @@ const MarketplaceHome = ({ referenceId }) => {
         </div>
       </section>
 
-      <div className="container mt-5" ref={allProductsSectionRef}>
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="mb-0">Tất cả sản phẩm</h2>
-          <div className="d-flex align-items-center">
-            <small className="text-muted me-3">
-              Cập nhật lần cuối: {new Date(state.lastFetchTime).toLocaleString()}
-            </small>
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={handleManualRefresh}
-              className="rounded-circle"
-              disabled={state.loading}
-            >
-              <i className={`bi ${state.loading ? 'bi-hourglass-split' : 'bi-arrow-clockwise'}`}></i>
-            </Button>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <Button
-            variant={state.activeCollection === COLLECTION_IDS.art ? "primary" : "outline-primary"}
-            className="me-2"
-            onClick={() => dispatch({ type: ACTIONS.SET_ACTIVE_COLLECTION, payload: COLLECTION_IDS.art })}
-          >
-            Bộ sưu tập nghệ thuật
-          </Button>
-          <Button
-            variant={state.activeCollection === COLLECTION_IDS.images ? "primary" : "outline-primary"}
-            onClick={() => dispatch({ type: ACTIONS.SET_ACTIVE_COLLECTION, payload: COLLECTION_IDS.images })}
-          >
-            Bộ sưu tập hình ảnh
-          </Button>
-        </div>
-
-        <Form className="mb-4">
-          <div className="row g-3">
-            <div className="col-md-4">
-              <InputGroup>
-                <InputGroup.Text><i className="bi bi-search"></i></InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder="Tìm kiếm sản phẩm..."
-                  value={state.searchQuery}
-                  onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { searchQuery: e.target.value } })}
-                />
-              </InputGroup>
-            </div>
-            <div className="col-md-3">
-              <Form.Select
-                value={state.sortOrder}
-                onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { sortOrder: e.target.value } })}
-              >
-                <option value="default">Sắp xếp mặc định</option>
-                <option value="lowToHigh">Giá: Thấp đến Cao</option>
-                <option value="highToLow">Giá: Cao đến Thấp</option>
-              </Form.Select>
-            </div>
-            <div className="col-md-5">
-              <InputGroup>
-                <InputGroup.Text>Khoảng giá</InputGroup.Text>
-                <Form.Control
-                  type="number"
-                  placeholder="Từ"
-                  value={state.priceRange.min}
-                  onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { priceRange: { ...state.priceRange, min: e.target.value } } })}
-                />
-                <InputGroup.Text>-</InputGroup.Text>
-                <Form.Control
-                  type="number"
-                  placeholder="Đến"
-                  value={state.priceRange.max}
-                  onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { priceRange: { ...state.priceRange, max: e.target.value } } })}
-                />
-              </InputGroup>
-            </div>
-          </div>
-        </Form>
-
-        {renderProductGrid(paginatedItems)}
-
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            Hiển thị: {paginatedItems.length} / {filteredItems.length} sản phẩm
-          </div>
-          <Pagination
-            currentPage={state.currentPage}
-            totalPages={Math.ceil(filteredItems.length / state.itemsPerPage)}
-            onPageChange={(page) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { currentPage: page } })}
-          />
-          <Form.Select
-            size="sm"
-            value={state.itemsPerPage}
-            onChange={(e) => dispatch({ type: ACTIONS.UPDATE_FILTERS, payload: { itemsPerPage: Number(e.target.value) } })}
-            className="w-auto"
-          >
-            {[6, 12, 24, 50].map((num) => (
-              <option key={num} value={num}>
-                {num} sản phẩm/trang
-              </option>
-            ))}
-          </Form.Select>
-        </div>
+      <div className="container mb-5">
+        <FeaturedUsers />
       </div>
 
+      <section className="benefits-section py-5">
+        <div className="container">
+          <h2 className="text-center fw-bold mb-5">Lợi ích của NFT Marketplace</h2>
+          <div className="row g-4">
+            {[
+              { title: "Sở hữu độc quyền", description: "Xác nhận quyền sở hữu duy nhất của tác phẩm nghệ thuật số." },
+              { title: "Giao dịch an toàn", description: "Sử dụng công nghệ blockchain để đảm bảo tính minh bạch và bảo mật." },
+              { title: "Hỗ trợ nghệ sĩ", description: "Tạo cơ hội cho nghệ sĩ kiếm thu nhập trực tiếp từ tác phẩm của họ." },
+              { title: "Đầu tư tiềm năng", description: "Cơ hội đầu tư vào tài sản số có giá trị tăng trưởng." }
+            ].map((benefit, index) => (
+              <div key={index} className="col-md-3">
+                <Card className="h-100 text-center border-0 shadow-sm">
+                  <Card.Body>
+                    <i className={`bi bi-${['shield-check', 'lock', 'palette', 'graph-up-arrow'][index]} display-4 mb-3 text-primary`}></i>
+                    <h5 className="card-title fw-bold">{benefit.title}</h5>
+                    <p className="card-text">{benefit.description}</p>
+                  </Card.Body>
+                </Card>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="container mb-5" ref={productSectionRef}>
+        <h2 className="text-center fw-bold mb-4">Sản phẩm nổi bật</h2>
+        {renderProductGrid(state.featuredItems)}
+        <div className="text-center mt-4">
+          <Button as={Link} to="/all-items" variant="outline-primary">Xem tất cả sản phẩm</Button>
+        </div>
+      </div>
       {state.selectedItem && (
         <Modal show={!!state.selectedItem} onHide={() => dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM })} size="lg" centered>
           <Modal.Header closeButton>
@@ -667,3 +454,4 @@ const MarketplaceHome = ({ referenceId }) => {
 };
 
 export default MarketplaceHome;
+
