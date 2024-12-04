@@ -8,7 +8,7 @@
   --success-color: #4caf50;
   --warning-color: #f9a825;
   /* Light Theme */
-  --light-bg-primary: #f8f9fa;
+  --light-bg-primary: #ffffff;
   --light-bg-secondary: #ffffff;
   --light-text-primary: #333;
   --light-text-secondary: #6c757d;
@@ -182,7 +182,7 @@
   color: #333;
   padding: 0.5rem;
   margin-right: 1rem;
-  margin-left: 10px;
+  margin-left: 20px;
 }
 
 .menu-toggle:hover {
@@ -409,7 +409,7 @@
 .light-theme .top-nav {
   background-color: var(--light-bg-secondary);
   border-bottom-color: var(--light-border-color);
-  background: rgba(255, 255, 255, 0.8);
+  background: rgb(255, 255, 255);
   backdrop-filter: blur(15px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
@@ -426,7 +426,7 @@
 
 .light-theme .content-area {
   background-color: var(--light-bg-primary);
-  background: linear-gradient(135deg, rgba(240, 248, 255, 0.8), rgba(255, 255, 255, 0.7));
+  background: linear-gradient(135deg, rgb(255, 255, 255)(255, 255, 255, 0.7));
   background-attachment: fixed;
 }
 
@@ -685,7 +685,7 @@
 .light-theme .content-area {
   background: linear-gradient(135deg,
       rgba(247, 250, 252, 0.9),
-      rgba(237, 242, 247, 0.7));
+      rgb(255, 255, 255));
   background-attachment: fixed;
 }
 

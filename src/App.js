@@ -347,11 +347,12 @@ function App() {
                   <div className="d-flex align-items-center w-100">
                     {/* Nút mở sidebar */}
                     <button
-                      className="btn btn-link menu-toggle"
+                      className="btn btn-link menu-toggle "
                       onClick={toggleSidebar}
                     >
                       <i className="bi bi-list fs-4"></i>
                     </button>
+
 
                     {/* Nút đổi theme */}
                     <button

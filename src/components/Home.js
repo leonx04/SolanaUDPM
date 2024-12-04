@@ -294,11 +294,14 @@ const MarketplaceHome = ({ referenceId }) => {
 
   return (
     <div className="marketplace-home">
-      <header className="hero-section text-center py-5 mb-5">
-        <h1 className="display-4 fw-bold text-primary mb-3">Khám phá NFT độc đáo</h1>
-        <p className="lead mb-4">Sở hữu những tác phẩm nghệ thuật số độc nhất và tiên phong trong thế giới ảo.</p>
-        <Button variant="primary" size="lg" className="rounded-pill px-4 py-2" onClick={scrollToProducts}>Khám phá ngay</Button>
-      </header>
+      <Card className="container text-center border-0 shadow-sm">
+        <header className="hero-section text-center py-5">
+          <h1 className="display-4 fw-bold text-primary mb-3">Khám phá NFT độc đáo</h1>
+          <p className="lead mb-4">Sở hữu những tác phẩm nghệ thuật số độc nhất và tiên phong trong thế giới blockchain.</p>
+          <Button variant="primary" size="lg" className="rounded-pill px-4 py-2" onClick={scrollToProducts}>Khám phá ngay</Button>
+        </header>
+      </Card>
+
 
       <div className="carousel container mb-5 ">
         <Carousel className="rounded-lg overflow-hidden shadow-lg">
@@ -316,18 +319,17 @@ const MarketplaceHome = ({ referenceId }) => {
           <Carousel.Item>
             <img
               className="d-block w-100"
-              src="https://static.vecteezy.com/system/resources/previews/023/325/782/non_2x/futuristic-digital-technology--nft-virtual-reality-concept-young-girl-wearing-vr-virtual-reality-goggle-experiencing-virtual-world-glitch-effect-vector.jpg"
-              alt="Trải nghiệm mua bán NFT "
+              src="https://static.vecteezy.com/system/resources/previews/023/325/782/non_2x/futuristic-digital-technology-metaverse-nft-virtual-reality-concept-young-girl-wearing-vr-virtual-reality-goggle-experiencing-virtual-world-glitch-effect-vector.jpg"
+              alt="Trải nghiệm mua bán NFT"
             />
             <Carousel.Caption>
-              <h3>Trải nghiệm mua bán NFT </h3>
+              <h3>Trải nghiệm mua bán NFT</h3>
               <p>Bước vào thế giới ảo với NFT của bạn.</p>
             </Carousel.Caption>
           </Carousel.Item>
         </Carousel>
       </div>
 
-      {/* New: How It Works Section */}
       <section className="how-it-works-section py-5">
         <Container>
           <h2 className="text-center fw-bold mb-5">Cách thức hoạt động</h2>
