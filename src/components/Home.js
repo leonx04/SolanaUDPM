@@ -142,8 +142,8 @@ const reducer = (state, action) => {
 };
 
 const COLLECTION_IDS = {
-  art: '35fe7ca2-e2ce-4df5-b24c-5040c6f0d186',
-  images: 'fba8b4c9-5a04-466c-b609-6532cbd6d9d1',
+  art: '7709064c-7f03-4891-801f-a2de787a688f',
+  images: 'fdd7a4c0-2312-45db-bcc2-ccdea75cc20a',
 };
 
 const MarketplaceHome = ({ referenceId }) => {
@@ -188,10 +188,10 @@ const MarketplaceHome = ({ referenceId }) => {
 
   const featuredItems = useMemo(() => {
     const sortedItems = state.allItems
-      .filter(itemData => 
+      .filter(itemData =>
         itemData.item.price &&
-        parseFloat(itemData.item.price.naturalAmount) > 0 && 
-        itemData.item.owner.referenceId !== referenceId 
+        parseFloat(itemData.item.price.naturalAmount) > 0 &&
+        itemData.item.owner.referenceId !== referenceId
       )
       .sort((a, b) => {
         const priceDiff = parseFloat(a.item.price.naturalAmount) - parseFloat(b.item.price.naturalAmount);
@@ -271,14 +271,14 @@ const MarketplaceHome = ({ referenceId }) => {
 
   const handleManualRefresh = async () => {
     await fetchAllItems();
-    dispatch({ 
-      type: ACTIONS.UPDATE_FILTERS, 
-      payload: { 
-        searchQuery: '', 
-        sortOrder: 'default', 
-        priceRange: { min: '', max: '' }, 
-        currentPage: 1 
-      } 
+    dispatch({
+      type: ACTIONS.UPDATE_FILTERS,
+      payload: {
+        searchQuery: '',
+        sortOrder: 'default',
+        priceRange: { min: '', max: '' },
+        currentPage: 1
+      }
     });
   };
 
@@ -331,9 +331,6 @@ const MarketplaceHome = ({ referenceId }) => {
     productSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const scrollToAllProducts = () => {
-    allProductsSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   const renderProductGrid = (items) => {
     if (state.loading) {
@@ -443,7 +440,7 @@ const MarketplaceHome = ({ referenceId }) => {
         <h2 className="text-center fw-bold mb-4">Sản phẩm nổi bật</h2>
         {renderProductGrid(featuredItems)}
         <div className="text-center mt-4">
-          <Button variant="outline-primary" onClick={scrollToAllProducts}>Xem tất cả sản phẩm</Button>
+          <Button as={Link} to="/all-items" variant="outline-primary">Xem tất cả sản phẩm</Button>
         </div>
       </div>
 
@@ -453,9 +450,9 @@ const MarketplaceHome = ({ referenceId }) => {
           <div className="row g-4">
             {[
               { title: "Giai đoạn 1", description: "Phát triển cơ sở hạ tầng và tích hợp Blockchain." },
-              { title: "Giai đoạn 2", description: "Ra mắt bộ sưu tập NFT đầu tiên và hợp tác đối tác." },
+              { title: "Giai đoạn 2", description: "Ra mắt bộ sưu tập NFT đầu tiên và tích hợp Game Shift." },
               { title: "Giai đoạn 3", description: "Mở rộng cộng đồng và triển khai tính năng mới." },
-              { title: "Giai đoạn 4", description: "Tích hợp Metaverse và trải nghiệm thực tế ảo." }
+              { title: "Giai đoạn 4", description: "Tích hợp FireBase và tăng trải nghiệm người dùng." }
             ].map((stage, index) => (
               <div key={index} className="col-md-3">
                 <Card className="h-100 text-center border-0 shadow-sm">

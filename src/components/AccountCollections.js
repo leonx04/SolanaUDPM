@@ -6,8 +6,8 @@ import { apiKey } from '../api';
 import { UserContext } from '../contexts/UserContext';
 
 const COLLECTION_IDS = {
-  art: '35fe7ca2-e2ce-4df5-b24c-5040c6f0d186',
-  images: 'fba8b4c9-5a04-466c-b609-6532cbd6d9d1',
+  art: '7709064c-7f03-4891-801f-a2de787a688f',
+  images: 'fdd7a4c0-2312-45db-bcc2-ccdea75cc20a',
 };
 
 const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {

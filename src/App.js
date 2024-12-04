@@ -18,6 +18,7 @@ import Home from "./components/Home";
 import PurchaseHistory from "./components/PurchaseHistory";
 import { UserContext } from './contexts/UserContext';
 import { getDatabase, ref, onValue } from "firebase/database";
+import AllItems from "./components/AllItems"; // Import AllItems component
 
 // Địa chỉ token USDC chính thức trên Solana devnet
 const USDC_MINT_ADDRESS = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
@@ -26,8 +27,8 @@ function App() {
   const isPhantomInstalled = window.phantom?.solana?.isPhantom;
   const [userData, setUserData] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);  // eslint-disable-line no-unused-vars
   const [userProfile, setUserProfile] = useState(null); // Added userProfile state
 
   // Theme state
@@ -118,13 +119,7 @@ function App() {
 
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth;
-      setIsMobile(width < 768);
-      if (width >= 768) {
-        setIsSidebarOpen(true);
-      } else {
-        setIsSidebarOpen(false);
-      }
+      setIsMobile(window.innerWidth < 768);
     };
 
     handleResize(); // Initial check
@@ -164,11 +159,6 @@ function App() {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const closeSidebarOnMobile = () => {
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
-  };
 
   const connectWallet = async () => {
     setWalletLoading(true);
@@ -291,10 +281,6 @@ function App() {
             </div>
           ) : (
             <div className="dashboard-container">
-              {/* Overlay for mobile */}
-              {isMobile && isSidebarOpen && (
-                <div className="sidebar-overlay" onClick={toggleSidebar}></div>
-              )}
 
               {/* Sidebar */}
               <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
@@ -303,14 +289,6 @@ function App() {
                     <i className="bi bi-palette me-2"></i>
                     Solana UDPM 11
                   </h3>
-                  {isMobile && (
-                    <button
-                      className="btn btn-link close-sidebar"
-                      onClick={toggleSidebar}
-                    >
-                      <i className="bi bi-x-lg text-white"></i>
-                    </button>
-                  )}
                 </div>
 
                 <div className="sidebar-content">
@@ -319,16 +297,24 @@ function App() {
                       to="/home"
                       className={({ isActive }) =>
                         `nav-link ${isActive ? 'active' : ''}`}
-                      onClick={closeSidebarOnMobile}
+
                     >
                       <i className="bi bi-house-door me-2"></i>
                       Trang chủ
                     </NavLink>
                     <NavLink
+                      to="/all-items"
+                      className={({ isActive }) =>
+                        `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                      <i className="bi bi-grid me-2"></i>
+                      Tất cả sản phẩm
+                    </NavLink> {/* Added NavLink for "Tất cả sản phẩm" */}
+                    <NavLink
                       to="/purchase-history"
                       className={({ isActive }) =>
                         `nav-link ${isActive ? 'active' : ''}`}
-                      onClick={closeSidebarOnMobile}
+
                     >
                       <i className="bi bi-journal-text me-2"></i>
                       Giao dịch
@@ -337,11 +323,12 @@ function App() {
                       to={`/account/${userData?.referenceId}`}
                       className={({ isActive }) =>
                         `nav-link ${isActive ? 'active' : ''}`}
-                      onClick={closeSidebarOnMobile}
+
                     >
                       <i className="bi bi-person-circle me-2"></i>
                       Account
                     </NavLink>
+
                   </div>
                 </div>
 
@@ -480,6 +467,7 @@ function App() {
                       path="/account/:referenceId"
                       element={<AccountManagement />}
                     />
+                    <Route path="/all-items" element={<AllItems referenceId={userData?.referenceId} />} /> {/* Added route for AllItems */}
                   </Routes>
                 </div>
               </div>
@@ -527,3 +515,4 @@ function App() {
 }
 
 export default App;
+
