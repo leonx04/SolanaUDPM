@@ -101,7 +101,8 @@ const MarketplaceHome = ({ referenceId }) => {
           itemData.type === 'UniqueAsset' &&
           itemData.item.price &&
           itemData.item.price.naturalAmount !== null &&
-          parseFloat(itemData.item.price.naturalAmount) > 0
+          parseFloat(itemData.item.price.naturalAmount) > 0 &&
+          itemData.item.owner.referenceId !== referenceId // Filter out items owned by the current user
         )
         .sort((a, b) => {
           const priceA = parseFloat(a.item.price.naturalAmount);
@@ -126,7 +127,7 @@ const MarketplaceHome = ({ referenceId }) => {
         console.error('Fetch error:', err);
       }
     }
-  }, []);
+  }, [referenceId]);
 
   const handlePeriodicRefresh = useCallback(async () => {
     const controller = new AbortController();
@@ -149,8 +150,12 @@ const MarketplaceHome = ({ referenceId }) => {
   }, [fetchAllItems]);
 
   const handleBuyItem = (itemData) => {
-    dispatch({ type: ACTIONS.SET_SELECTED_ITEM, payload: itemData.item });
-    dispatch({ type: ACTIONS.SET_BUY_ERROR, payload: null });
+    if (itemData.item.owner.referenceId === referenceId) {
+      dispatch({ type: ACTIONS.SET_BUY_ERROR, payload: "Bạn không thể mua sản phẩm của chính mình." });
+    } else {
+      dispatch({ type: ACTIONS.SET_SELECTED_ITEM, payload: itemData.item });
+      dispatch({ type: ACTIONS.SET_BUY_ERROR, payload: null });
+    }
   };
 
   const buyItemWithPhantomWallet = async () => {
@@ -161,6 +166,10 @@ const MarketplaceHome = ({ referenceId }) => {
       const provider = window.phantom?.solana;
       if (!provider || !provider.isConnected) {
         throw new Error("Vui lòng kết nối ví Phantom trước khi mua");
+      }
+
+      if (state.selectedItem.owner.referenceId === referenceId) {
+        throw new Error("Bạn không thể mua sản phẩm của chính mình.");
       }
 
       const response = await axios.post(
@@ -229,6 +238,7 @@ const MarketplaceHome = ({ referenceId }) => {
       <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mb-4">
         {items.map((itemData) => {
           const item = itemData.item;
+          const isOwnItem = item.owner.referenceId === referenceId;
           return (
             <div key={item.id} className="col">
               <Card className="h-100 shadow-sm hover-lift">
@@ -264,12 +274,13 @@ const MarketplaceHome = ({ referenceId }) => {
                       {`$${parseFloat(item.price.naturalAmount).toFixed(2)} ${item.price.currencyId}`}
                     </span>
                     <Button
-                      variant="outline-primary"
+                      variant={isOwnItem ? "outline-secondary" : "outline-primary"}
                       size="sm"
                       onClick={() => handleBuyItem(itemData)}
                       className="rounded-pill"
+                      disabled={isOwnItem}
                     >
-                      Xem chi tiết
+                      {isOwnItem ? 'Sản phẩm của bạn' : 'Xem chi tiết'}
                     </Button>
                   </div>
                 </Card.Body>
@@ -428,7 +439,7 @@ const MarketplaceHome = ({ referenceId }) => {
             <Button
               variant="primary"
               onClick={buyItemWithPhantomWallet}
-              disabled={state.buyLoading}
+              disabled={state.buyLoading || state.selectedItem.owner.referenceId === referenceId}
             >
               {state.buyLoading ? (
                 <>
@@ -442,6 +453,8 @@ const MarketplaceHome = ({ referenceId }) => {
                   />
                   Đang xử lý...
                 </>
+              ) : state.selectedItem.owner.referenceId === referenceId ? (
+                'Sản phẩm của bạn'
               ) : (
                 'Mua ngay'
               )}
@@ -454,4 +467,3 @@ const MarketplaceHome = ({ referenceId }) => {
 };
 
 export default MarketplaceHome;
-
