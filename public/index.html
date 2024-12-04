@@ -18,7 +18,7 @@
     content="Discover and trade exclusive NFT art powered by Solana. Join the future of digital art!" />
   <meta property="og:image"
     content="%PUBLIC_URL%/favicon.ico" />
-  <meta property="og:url" content="https://udpm-solana-11.netlify.app" />
+  <meta property="og:url" content="https://market-nft-solana-updm-11.netlify.app" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="NFT Art Marketplace" />
 
@@ -29,7 +29,7 @@
     content="Discover and trade exclusive NFT art powered by Solana. Join the future of digital art!" />
   <meta name="twitter:image"
     content="%PUBLIC_URL%/favicon.ico" />
-  <meta name="twitter:url" content="https://udpm-solana-11.netlify.app" />
+  <meta name="twitter:url" content="https://market-nft-solana-updm-11.netlify.app" />
 
   <!-- Telegram Metadata -->
   <meta property="og:image:secure_url"
@@ -40,16 +40,29 @@
 
   <title>NFT Marketplace - Powered by Solana</title>
 
+  <!-- Add these in the head section -->
+  <link rel="preconnect" href="https://api.gameshift.dev" />
+  <link rel="preconnect" href="https://static.vecteezy.com" />
+
+  <!-- Preload critical fonts -->
+  <link 
+    rel="preload" 
+    href="/fonts/bootstrap-icons.woff2" 
+    as="font"
+    type="font/woff2"
+    crossorigin
+  />
+
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZF2PSJ6BHM"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag() {
-      dataLayer.push(arguments);
-    }
+    function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
 
-    gtag('config', 'G-ZF2PSJ6BHM');
+    gtag('config', 'G-ZF2PSJ6BHM', {
+      'send_page_view': false // Defer pageview until after hydration
+    });
   </script>
 </head>
 
@@ -59,3 +72,4 @@
 </body>
 
 </html>
+
