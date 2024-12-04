@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Card, Form, InputGroup, Modal, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, Button, Card, Form, InputGroup, Modal, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'react-feather';
 import { Link } from 'react-router-dom';
 import { apiKey } from '../api';
@@ -243,7 +243,7 @@ const AllItems = ({ referenceId }) => {
                     className="me-2"
                     onClick={() => setActiveCollection(COLLECTION_IDS.art)}
                 >
-                    Bộ sưu tập nghệ thuật
+                    Bộ sưu tập tranh
                 </Button>
                 <Button
                     variant={activeCollection === COLLECTION_IDS.images ? "primary" : "outline-primary"}

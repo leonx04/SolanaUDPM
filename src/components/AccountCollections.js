@@ -348,12 +348,12 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
         onSelect={handleCollectionChange}
         className="mb-4"
       >
-        <Tab eventKey={COLLECTION_IDS.art} title="Bộ sưu tập nghệ thuật">
+        <Tab eventKey={COLLECTION_IDS.art} title="Bộ sưu tập tranh">
           <Row className="mb-3">
             <Col>
               <Card className="border-primary">
                 <Card.Body>
-                  <Card.Title>Bộ sưu tập nghệ thuật</Card.Title>
+                  <Card.Title>Bộ sưu tập tranh</Card.Title>
                   <Card.Text>Khám phá các tác phẩm nghệ thuật độc đáo.</Card.Text>
                   <Button variant="primary">Đang xem</Button>
                 </Card.Body>

@@ -308,7 +308,7 @@ function App() {
                         `nav-link ${isActive ? 'active' : ''}`}
                     >
                       <i className="bi bi-grid me-2"></i>
-                      Tất cả sản phẩm
+                      Sản phẩm
                     </NavLink> {/* Added NavLink for "Tất cả sản phẩm" */}
                     <NavLink
                       to="/purchase-history"

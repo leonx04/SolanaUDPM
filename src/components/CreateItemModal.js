@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Button, Form, Alert, ProgressBar } from 'react-bootstrap';
+import { Alert, Button, Form, Modal, ProgressBar } from 'react-bootstrap';
 import { apiKey } from '../api';
 
 const CLOUDINARY_UPLOAD_PRESET = 'ARTSOLANA';
@@ -215,7 +215,7 @@ const CreateItemModal = ({ show, onHide, referenceId, onSuccess }) => {
               onChange={(e) => setSelectedCollection(e.target.value)}
               disabled={isSubmitting}
             >
-              <option value={COLLECTION_IDS.art}>Bộ sưu tập nghệ thuật</option>
+              <option value={COLLECTION_IDS.art}>Bộ sưu tập tranh</option>
               <option value={COLLECTION_IDS.images}>Bộ sưu tập hình ảnh</option>
             </Form.Select>
           </Form.Group>
