@@ -108,7 +108,7 @@ const FeaturedUsers = () => {
                   style={{ width: '80px', height: '80px', objectFit: 'cover', marginTop: '-60px', border: '4px solid white' }}
                 />
                 <Card.Title>{user.username}</Card.Title>
-                <Card.Text>Số lượng vật phẩm: {user.itemCount}</Card.Text>
+                <Card.Text>Đang bán: {user.itemCount}</Card.Text>
                 <Link to={`/account/${user.referenceId}`} className="btn btn-primary btn-sm">Xem hồ sơ</Link>
               </Card.Body>
             </Card>

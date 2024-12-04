@@ -6,6 +6,7 @@ import { apiKey } from '../api';
 import { driver as Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import unidecode from 'unidecode';
+import { serverTimestamp } from 'firebase/database';
 
 const apiBaseUrl = "https://api.gameshift.dev/nx/users";
 const PHANTOM_WALLET_DOWNLOAD_LINK = "https://phantom.app/download";
@@ -143,7 +144,8 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
           referenceId: data.referenceId,
           email: data.email,
           imageUrl: null,
-          socialLinks: null
+          socialLinks: null,
+          createdAt: serverTimestamp() // Add this line
         });
 
         setSuccessMessage('Đăng ký thành công!');
