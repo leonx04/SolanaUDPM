@@ -1164,3 +1164,12 @@
   }
 }
 
+.hover-effect {
+  color: #007bff; /* Màu mặc định */
+  transition: color 0.3s ease;
+}
+
+.hover-effect:hover {
+  color: #0056b3; /* Màu khi hover */
+  text-decoration: underline;
+}

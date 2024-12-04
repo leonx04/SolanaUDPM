@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Card, Col, Dropdown, Form, Modal, Row, Spinner, Tab, Tabs } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Dropdown, Form, Modal, Row, Spinner, Tab, Tabs, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { apiKey } from '../api';
 import { UserContext } from '../contexts/UserContext';
@@ -51,9 +51,9 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
         },
       });
       const filteredItems = response.data.data.filter(item => item.item.owner.referenceId === referenceId);
-      
+
       const hasDataChanged = JSON.stringify(filteredItems) !== JSON.stringify(items);
-      
+
       if (hasDataChanged) {
         setItems(filteredItems);
         setLastFetchTime(now);
@@ -68,7 +68,7 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
 
   useEffect(() => {
     fetchItems(activeCollection, true);
-    
+
     const intervalId = setInterval(() => {
       fetchItems(activeCollection);
     }, 10000);
@@ -287,9 +287,6 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
                 />
                 <Card.Body className="d-flex flex-column">
                   <Card.Title className="fw-bold mb-2">{item.name}</Card.Title>
-                  <Card.Text className="text-muted small mb-3">
-                    Tác giả: <Link className="text-decoration-none badge badge-success" to={`/account/${item.owner.referenceId}`}>{item.owner.referenceId}</Link>
-                  </Card.Text>
                   <div className="mt-auto d-flex justify-content-between align-items-center">
                     {hasPrice ? (
                       <>

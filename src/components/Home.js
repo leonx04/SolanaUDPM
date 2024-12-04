@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import { Alert, Button, Card, Carousel, Form, InputGroup, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Card, Carousel, Form, InputGroup, Modal, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { apiKey } from '../api';
 
@@ -377,7 +377,22 @@ const MarketplaceHome = ({ referenceId }) => {
                 <Card.Body className="d-flex flex-column">
                   <Card.Title className="fw-bold mb-2">{item.name}</Card.Title>
                   <Card.Text className="text-muted small mb-3">
-                    Tác giả: <Link className="text-decoration-none badge badge-success" to={`/account/${item.owner.referenceId}`}> {item.owner.referenceId}</Link>
+                    Tác giả:
+                    <OverlayTrigger
+                      placement="top" // Vị trí của tooltip: top, right, bottom, left
+                      overlay={
+                        <Tooltip id={`tooltip-${item.owner.referenceId}`}>
+                          Nhấn để xem trang cá nhân của tác giả
+                        </Tooltip>
+                      }
+                    >
+                      <Link
+                        className="text-decoration-none badge badge-success"
+                        to={`/account/${item.owner.referenceId}`}
+                      >
+                        <i className="bi bi-person-circle me-1"></i> {item.owner.referenceId}
+                      </Link>
+                    </OverlayTrigger>
                   </Card.Text>
                   <div className="mt-auto d-flex justify-content-between align-items-center">
                     <span className="badge bg-primary rounded-pill px-3 py-2">
