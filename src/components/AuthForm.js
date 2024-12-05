@@ -191,11 +191,11 @@ const AuthForm = ({ setIsLoggedIn, setUserData }) => {
             <div className="bg-white rounded-4 p-4 shadow-sm">
               <div className="text-center mb-4">
                 <h4 className="fw-bold mb-1 text-dark">
-                  {isRegistering ? 'Tạo đăng nhập' : 'Đăng nhập'}
+                  {isRegistering ? 'Tạo tài khoản mới' : 'Đăng nhập'}
                 </h4>
                 <p className="text-secondary small mb-0">
                   {isRegistering
-                    ? 'Nhập thông tin để tạo đăng nhập mới'
+                    ? 'Nhập thông tin để tạo tài khoản mới'
                     : 'Đăng nhập để tiếp tục'}
                 </p>
               </div>
