@@ -33,7 +33,7 @@
     "react-router-dom": "^6.28.0",
     "source-map-loader": "^5.0.0",
     "styled-components": "^6.1.13",
-    "superstruct": "2.0.2",
+    "superstruct": "^2.0.2",
     "unidecode": "^1.1.0",
     "uuid": "^11.0.3",
     "web-vitals": "^2.1.4",
