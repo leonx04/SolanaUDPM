@@ -8,17 +8,17 @@ import {
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Dropdown, Form, Modal } from 'react-bootstrap';
+import { Button, Dropdown } from 'react-bootstrap';
 import { Link, Navigate, NavLink, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import './App.css';
 import AccountManagement from "./components/AccountManagement";
 import AuthForm from "./components/AuthForm";
 import Home from "./components/Home";
 // import MyNfts from "./components/MyNfts";
+import { getDatabase, onValue, ref } from "firebase/database";
+import AllItems from "./components/AllItems"; // Import AllItems component
 import PurchaseHistory from "./components/PurchaseHistory";
 import { UserContext } from './contexts/UserContext';
-import { getDatabase, ref, onValue } from "firebase/database";
-import AllItems from "./components/AllItems"; // Import AllItems component
 
 // Địa chỉ token USDC chính thức trên Solana devnet
 const USDC_MINT_ADDRESS = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
@@ -49,11 +49,8 @@ function App() {
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletError, setWalletError] = useState(null);
 
-  // New states for notification and signing
-  const [showNotification, setShowNotification] = useState(false);
-  const [showSigningModal, setShowSigningModal] = useState(false);
-  const [messageToSign, setMessageToSign] = useState('');
-  const [signedMessage, setSignedMessage] = useState(''); // eslint-disable-line no-unused-vars
+  // New states for notification
+  const [notification, setNotification] = useState(null);
 
 
   // Hàm lấy số dư USDC
@@ -130,7 +127,6 @@ function App() {
 
     if (provider) {
       const handleConnect = async (publicKey) => {
-        console.log('Connected to wallet:', publicKey.toBase58());
         await fetchUsdcBalance();
       };
 
@@ -175,7 +171,18 @@ function App() {
         await provider.disconnect();
       }
 
-      // Connect with explicit permission
+      // Pre-defined signature message
+      const message = "Xác nhận kết nối với NFT Marketplace";
+      const encodedMessage = new TextEncoder().encode(message);
+
+      // Request signature
+      const signedMessage = await provider.signMessage(encodedMessage, "utf8");
+
+      if (!signedMessage) {
+        throw new Error("Không thể xác nhận chữ ký. Vui lòng thử lại.");
+      }
+
+      // If signature is successful, proceed with connection
       await provider.connect({ onlyIfTrusted: false });
 
       const publicKey = provider.publicKey;
@@ -191,26 +198,26 @@ function App() {
       // Lấy số dư USDC
       await fetchUsdcBalance();
 
-      // Show notification
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 3000);
-
-      // Show signing modal
-      setShowSigningModal(true);
+      // Show success notification
+      showNotification('Kết nối ví thành công!', 'success');
 
     } catch (err) {
       console.error("Lỗi khi kết nối ví:", err);
 
       // More specific error handling
       if (err.code === 4001) {
-        // User rejected the request
-        setWalletError("Kết nối ví bị từ chối. Vui lòng thử lại.");
+        showNotification('Kết nối ví bị từ chối. Vui lòng thử lại.', 'error');
       } else {
-        setWalletError(err.message || "Không thể kết nối ví. Vui lòng thử lại.");
+        showNotification(err.message || "Không thể kết nối ví. Vui lòng thử lại.", 'error');
       }
     } finally {
       setWalletLoading(false);
     }
+  };
+
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const getWalletBalance = async (publicKey) => {
@@ -235,21 +242,6 @@ function App() {
     } catch (err) {
       console.error("Lỗi khi ngắt kết nối ví:", err);
       setWalletError("Không thể ngắt kết nối ví. Vui lòng thử lại.");
-    }
-  };
-
-  const signMessage = async () => {
-    try {
-      const provider = window.phantom?.solana;
-      if (!provider) throw new Error("Phantom wallet not found!");
-
-      const encodedMessage = new TextEncoder().encode(messageToSign);
-      const signedMessage = await provider.signMessage(encodedMessage, "utf8");
-      setSignedMessage(JSON.stringify(signedMessage));
-      setShowSigningModal(false);
-    } catch (error) {
-      console.error("Error signing message:", error);
-      setWalletError("Không thể ký tin nhắn. Vui lòng thử lại.");
     }
   };
 
@@ -476,41 +468,11 @@ function App() {
           )}
         </div>
       </UserContext.Provider>
-      {/* Notification Modal */}
-      <Modal show={showNotification} onHide={() => setShowNotification(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Thông báo</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>Ví Phantom đã được kết nối thành công!</Modal.Body>
-      </Modal>
-
-      {/* Signing Modal */}
-      <Modal show={showSigningModal} onHide={() => setShowSigningModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Ký tin nhắn</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Nhập tin nhắn để ký</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Nhập tin nhắn"
-                value={messageToSign}
-                onChange={(e) => setMessageToSign(e.target.value)}
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowSigningModal(false)}>
-            Hủy
-          </Button>
-          <Button variant="primary" onClick={signMessage}>
-            Ký tin nhắn
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {notification && (
+        <div className={`notification ${notification.type}`}>
+          {notification.message}
+        </div>
+      )}
     </Router>
   );
 }

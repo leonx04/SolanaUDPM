@@ -431,7 +431,7 @@ const AccountCollections = ({ referenceId, isOwnProfile, loggedInUserId }) => {
 
       <Modal show={showBuyModal} onHide={() => setShowBuyModal(false)} size="lg" centered>
         <Modal.Header closeButton>
-          <Modal.Title>Xem chi tiết <span className="badge bg-info">{selectedItem?.name}</span></Modal.Title>
+          <Modal.Title>Mua ngay <span className="badge bg-info">{selectedItem?.name}</span></Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="row">

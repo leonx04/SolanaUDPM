@@ -1,151 +1,70 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Button, Form, InputGroup, Modal, Pagination } from "react-bootstrap";
+import { useInView } from 'react-intersection-observer';
+import useSWR from 'swr';
 import { apiKey } from '../api';
 import '../App.css';
 
-const PurchaseHistory = ({ referenceId }) => {
-  const [purchases, setPurchases] = useState([]);
+const fetcher = async (url: string) => {
+  const response = await fetch(url, {
+    headers: {
+      accept: "application/json",
+      "x-api-key": apiKey,
+    },
+  });
+  if (!response.ok) {
+    throw new Error('An error occurred while fetching the data.');
+  }
+  return response.json();
+};
+
+const PurchaseHistory: React.FC<{ referenceId: string }> = ({ referenceId }) => {
   const [filteredPurchases, setFilteredPurchases] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [imageToShow, setImageToShow] = useState(null);
-
-  // Trạng thái cho bộ lọc và tìm kiếm
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tất cả');
-
-  // Trạng thái phân trang nâng cao
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
+  const { data, error, mutate } = useSWR(
+    "https://api.gameshift.dev/nx/payments",
+    fetcher
+  );
 
-  const transactionStatusCache = {};
-  const TRANSACTION_STATUS_CACHE_TIME = 2 * 60 * 1000; // 2 phút
+  const { ref, inView } = useInView({
+    threshold: 0,
+  });
 
-  // Thêm giới hạn tốc độ để tránh bị chặn bởi API
-  const RATE_LIMIT_DELAY = 500; // Độ trễ 500ms giữa các yêu cầu
-  const MAX_RETRIES = 3; // Số lần thử lại tối đa
+  // const checkTransactionStatus = useCallback(async (paymentId: string) => {
+  //   const response = await fetch(
+  //     `https://api.gameshift.dev/nx/payments/${paymentId}`,
+  //     {
+  //       headers: {
+  //         accept: "application/json",
+  //         "x-api-key": apiKey,
+  //       },
+  //     }
+  //   );
+  //   if (!response.ok) {
+  //     throw new Error("Không thể kiểm tra trạng thái giao dịch.");
+  //   }
+  //   const data = await response.json();
+  //   return data.status;
+  // }, []);
 
-  const checkTransactionStatus = useCallback(async (paymentId) => {
-    const currentTime = Date.now();
-
-    // Kiểm tra cache trước
-    if (
-      transactionStatusCache[paymentId] &&
-      (currentTime - transactionStatusCache[paymentId].timestamp) < TRANSACTION_STATUS_CACHE_TIME
-    ) {
-      return transactionStatusCache[paymentId].status;
-    }
-
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        // Thêm độ trễ để tránh gửi quá nhiều request
-        if (attempt > 1) {
-          await new Promise(resolve => setTimeout(resolve, attempt * RATE_LIMIT_DELAY));
-        }
-
-        const response = await fetch(
-          `https://api.gameshift.dev/nx/payments/${paymentId}`,
-          {
-            method: "GET",
-            headers: {
-              accept: "application/json",
-              "x-api-key": apiKey,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          // Kiểm tra mã trạng thái cụ thể
-          if (response.status === 429) {
-            console.warn(`Yêu cầu bị giới hạn (Attempt ${attempt}): ${paymentId}`);
-            continue; // Thử lại
-          }
-          throw new Error("Không thể kiểm tra trạng thái giao dịch.");
-        }
-
-        const data = await response.json();
-
-        // Lưu vào cache
-        transactionStatusCache[paymentId] = {
-          status: data.status,
-          timestamp: currentTime
-        };
-
-        return data.status;
-      } catch (error) {
-        console.error(`Lỗi kiểm tra trạng thái giao dịch (Attempt ${attempt}):`, error);
-
-        // Nếu là lần thử cuối cùng
-        if (attempt === MAX_RETRIES) {
-          return null;
-        }
-      }
-    }
-
-    return null;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchPurchaseHistory = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const url = "https://api.gameshift.dev/nx/payments";
-      const options = {
-        method: "GET",
-        headers: {
-          accept: "application/json",
-          "x-api-key": apiKey,
-        },
-      };
-
-      const response = await fetch(url, options);
-      const data = await response.json();
-
-      if (Array.isArray(data.data)) {
-        const userPurchases = data.data.filter(
-          (purchase) => purchase.purchaser.referenceId === referenceId
-        );
-
-        // Kiểm tra trạng thái giao dịch với độ trễ giữa các yêu cầu
-        const updatedPurchases = [];
-        for (const purchase of userPurchases) {
-          // Thêm độ trễ ngẫu nhiên để tránh bị giới hạn
-          await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
-
-          const status = await checkTransactionStatus(purchase.id);
-          updatedPurchases.push({
-            ...purchase,
-            status: status || purchase.status
-          });
-        }
-
-        setPurchases(updatedPurchases);
-        setFilteredPurchases(updatedPurchases);
-        setCurrentPage(1);
-      } else {
-        throw new Error("Dữ liệu trả về không đúng định dạng.");
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [referenceId, checkTransactionStatus]);
-
-  // Hàm lọc và tìm kiếm
   const applyFiltersAndSearch = useCallback(() => {
-    let result = purchases;
+    if (!data || !data.data) return;
 
-    // Lọc theo trạng thái
+    let result = data.data.filter(
+      (purchase) => purchase.purchaser.referenceId === referenceId
+    );
+
     if (statusFilter !== 'Tất cả') {
       result = result.filter(purchase => purchase.status === statusFilter);
     }
 
-    // Tìm kiếm
     if (searchTerm) {
       result = result.filter(purchase =>
         purchase.sku.item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -155,49 +74,50 @@ const PurchaseHistory = ({ referenceId }) => {
 
     setFilteredPurchases(result);
     setCurrentPage(1);
-  }, [purchases, statusFilter, searchTerm]);
+  }, [data, referenceId, statusFilter, searchTerm]);
 
-  // Hàm xem chi tiết đơn hàng
+  useEffect(() => {
+    applyFiltersAndSearch();
+  }, [applyFiltersAndSearch]);
+
+  useEffect(() => {
+    if (inView) {
+      mutate();
+    }
+  }, [inView, mutate]);
+
   const handleViewDetails = (purchase) => {
     setSelectedPurchase(purchase);
     setShowModal(true);
   };
 
-  // Hàm đóng modal chi tiết
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedPurchase(null);
   };
 
-  // Hàm xem ảnh phóng to
   const handleImageClick = (imageUrl) => {
     setImageToShow(imageUrl);
   };
 
-  // Tính toán phân trang
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredPurchases.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Thay đổi trang
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Tính toán tổng số trang
   const totalPages = Math.ceil(filteredPurchases.length / itemsPerPage);
 
-  // Hàm tạo nút phân trang
   const renderPaginationItems = () => {
     const pageNumbers = [];
     const maxPagesToShow = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
     let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
 
-    // Điều chỉnh lại startPage nếu endPage đã ở cuối
     if (endPage === totalPages) {
       startPage = Math.max(1, totalPages - maxPagesToShow + 1);
     }
 
-    // Nút trang đầu
     if (startPage > 1) {
       pageNumbers.push(
         <Pagination.First key="first" onClick={() => paginate(1)} />,
@@ -205,7 +125,6 @@ const PurchaseHistory = ({ referenceId }) => {
       );
     }
 
-    // Các nút trang
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(
         <Pagination.Item
@@ -218,7 +137,6 @@ const PurchaseHistory = ({ referenceId }) => {
       );
     }
 
-    // Nút trang cuối
     if (endPage < totalPages) {
       pageNumbers.push(
         <Pagination.Ellipsis key="ellipsis-end" />,
@@ -229,142 +147,64 @@ const PurchaseHistory = ({ referenceId }) => {
     return pageNumbers;
   };
 
-  // Hiệu ứng phụ để áp dụng bộ lọc và tìm kiếm
-  useEffect(() => {
-    applyFiltersAndSearch();
-  }, [applyFiltersAndSearch]);
-
-  // Hiệu ứng phụ để tải dữ liệu
-  useEffect(() => {
-    if (referenceId) {
-      fetchPurchaseHistory();
-    }
-  }, [referenceId, fetchPurchaseHistory]);
-
-  // Xử lý trạng thái tải
-  if (loading) {
-    return <div>Đang tải dữ liệu...</div>;
-  }
-
-  // Xử lý lỗi
-  if (error) {
-    return <div className="alert alert-danger">{error}</div>;
-  }
+  if (error) return <div className="alert alert-danger">Failed to load purchase history.</div>;
+  if (!data) return <div>Loading...</div>;
 
   return (
     <div className="card" style={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
-      <div
-        className="card-header"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          gap: '10px',
-          padding: '15px'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h5 style={{ margin: 0 }}>Lịch Sử Mua Hàng</h5>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '10px',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '10px',
-              flex: 1,
-              minWidth: '250px'
+      <div className="card-header">
+        <h5>Lịch Sử Mua Hàng</h5>
+        <div className="d-flex flex-wrap gap-2 align-items-center mt-2">
+          <InputGroup>
+            <Form.Control
+              type="text"
+              placeholder="Tìm kiếm theo tên hoặc mô tả..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </InputGroup>
+          <Form.Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="Tất cả">Tất cả</option>
+            <option value="Confirmed">Đã xác nhận</option>
+            <option value="Pending">Đang chờ</option>
+            <option value="Expired">Hết hạn</option>
+            <option value="Completed">Hoàn thành</option>
+          </Form.Select>
+          <Form.Select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
             }}
           >
-            <InputGroup style={{ flex: 1, minWidth: '200px' }}>
-              <Form.Control
-                type="text"
-                placeholder="Tìm kiếm theo tên hoặc mô tả..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ height: '38px' }}
-              />
-            </InputGroup>
-
-            <Form.Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                width: '150px',
-                height: '38px',
-                minWidth: '120px'
-              }}
-            >
-              <option value="Tất cả">Tất cả</option>
-              <option value="Confirmed">Đã xác nhận</option>
-              <option value="Pending">Đang chờ</option>
-              <option value="Expired">Hết hạn</option>
-              <option value="Completed">Hoàn thành</option>
-            </Form.Select>
-
-            <Form.Select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              style={{
-                width: '100px',
-                height: '38px',
-                minWidth: '80px'
-              }}
-            >
-              <option value={5}>5 items</option>
-              <option value={10}>10 items</option>
-              <option value={20}>20 items</option>
-              <option value={50}>50 items</option>
-            </Form.Select>
-            <Button
-              className="btn btn-primary btn-sm"
-              onClick={fetchPurchaseHistory}
-              style={{
-                height: '38px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <i className="bi bi-arrow-clockwise"></i>
-            </Button>
-          </div>
+            <option value={5}>5 items</option>
+            <option value={10}>10 items</option>
+            <option value={20}>20 items</option>
+            <option value={50}>50 items</option>
+          </Form.Select>
+          <Button
+            className="btn btn-primary btn-sm"
+            onClick={() => mutate()}
+          >
+            <i className="bi bi-arrow-clockwise"></i>
+          </Button>
         </div>
       </div>
-
-      <div
-        className="card-body"
-        style={{
-          padding: '15px',
-          overflowX: 'auto',
-          width: '100%'
-        }}
-      >
-        <table
-          className="table table-responsive table-hover"
-          style={{ minWidth: '800px', width: '100%' }}
-        >
+      <div className="card-body">
+        <table className="table table-responsive table-hover">
           <thead>
             <tr>
-              <th style={{ width: '5%' }}>#</th>
-              <th style={{ width: '10%' }}>Ảnh</th>
-              <th style={{ width: '15%' }}>Sản phẩm</th>
-              <th style={{ width: '20%' }}>Mô tả</th>
-              <th style={{ width: '10%' }}>Giá</th>
-              <th style={{ width: '10%' }}>Ngày tạo</th>
-              <th style={{ width: '10%' }}>Trạng thái</th>
-              <th style={{ width: '10%' }}>Hành động</th>
+              <th>#</th>
+              <th>Ảnh</th>
+              <th>Sản phẩm</th>
+              <th>Mô tả</th>
+              <th>Giá</th>
+              <th>Ngày tạo</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -396,74 +236,54 @@ const PurchaseHistory = ({ referenceId }) => {
                     hour: '2-digit',
                     minute: '2-digit',
                     second: '2-digit',
-                    hour12: false, // Sử dụng định dạng 24h
-                    timeZone: 'UTC' // Hoặc đổi sang múi giờ khác nếu cần
+                    hour12: false,
+                    timeZone: 'UTC'
                   })}
-
                 </td>
                 <td>
                   <span
-                    className={`badge ${purchase.status === "Confirmed"
-                      ? "bg-success"
-                      : purchase.status === "Pending"
+                    className={`badge ${
+                      purchase.status === "Confirmed"
+                        ? "bg-success"
+                        : purchase.status === "Pending"
                         ? "bg-warning"
                         : purchase.status === "Expired"
-                          ? "bg-danger"
-                          : "bg-secondary"
-                      }`}
-                    style={{ fontSize: '0.8em' }}
+                        ? "bg-danger"
+                        : "bg-secondary"
+                    }`}
                   >
                     {purchase.status}
                   </span>
                 </td>
                 <td>
-                  <button
-                    className="btn btn-primary btn-sm"
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={() => handleViewDetails(purchase)}
                   >
                     Chi tiết
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-
         {filteredPurchases.length === 0 && (
-          <div
-            className="text-center text-muted"
-            style={{ padding: '20px' }}
-          >
+          <div className="text-center text-muted py-3">
             Không có giao dịch nào phù hợp
           </div>
         )}
-
         {filteredPurchases.length > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginTop: '15px'
-            }}
-          >
-            <div className="text-muted" style={{ minWidth: '200px' }}>
-              Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredPurchases.length)}
-              {' '}trong tổng số{' '}
-              {filteredPurchases.length} giao dịch
+          <div className="d-flex justify-content-between align-items-center mt-3">
+            <div className="text-muted">
+              Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredPurchases.length)}{' '}
+              trong tổng số {filteredPurchases.length} giao dịch
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Pagination style={{ margin: 0 }}>
-                {renderPaginationItems()}
-              </Pagination>
-            </div>
+            <Pagination>{renderPaginationItems()}</Pagination>
           </div>
         )}
       </div>
-
-      {/* Modal chi tiết đơn hàng */}
+      <div ref={ref} style={{ height: '1px' }} /> {/* Intersection Observer target */}
       {selectedPurchase && (
         <Modal show={showModal} onHide={handleCloseModal} centered>
           <Modal.Header closeButton>
@@ -475,8 +295,8 @@ const PurchaseHistory = ({ referenceId }) => {
                 src={selectedPurchase.sku.item.imageUrl}
                 alt={selectedPurchase.sku.item.name}
                 style={{
-                  width: "400px",
-                  height: "400px",
+                  width: "100%",
+                  maxHeight: "400px",
                   objectFit: "cover",
                   borderRadius: "8px",
                   marginBottom: "15px",
@@ -493,14 +313,15 @@ const PurchaseHistory = ({ referenceId }) => {
             <p>
               <strong>Trạng thái:</strong>{" "}
               <span
-                className={`badge ${selectedPurchase.status === "Confirmed"
-                  ? "bg-success"
-                  : selectedPurchase.status === "Pending"
+                className={`badge ${
+                  selectedPurchase.status === "Confirmed"
+                    ? "bg-success"
+                    : selectedPurchase.status === "Pending"
                     ? "bg-warning"
                     : selectedPurchase.status === "Expired"
-                      ? "bg-danger"
-                      : "bg-secondary"
-                  }`}
+                    ? "bg-danger"
+                    : "bg-secondary"
+                }`}
               >
                 {selectedPurchase.status}
               </span>
@@ -526,8 +347,6 @@ const PurchaseHistory = ({ referenceId }) => {
           </Modal.Footer>
         </Modal>
       )}
-
-      {/* Modal phóng to ảnh */}
       {imageToShow && (
         <Modal show={true} onHide={() => setImageToShow(null)} centered>
           <Modal.Body>
@@ -547,3 +366,4 @@ const PurchaseHistory = ({ referenceId }) => {
 };
 
 export default PurchaseHistory;
+

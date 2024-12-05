@@ -340,7 +340,7 @@ const AllItems = ({ referenceId }) => {
                                             onClick={() => handleBuyItem(itemData)}
                                             className="rounded-pill"
                                         >
-                                            Xem chi tiết
+                                            Mua ngay
                                         </Button>
                                     </div>
                                 </Card.Body>
@@ -376,7 +376,7 @@ const AllItems = ({ referenceId }) => {
             {selectedItem && (
                 <Modal show={!!selectedItem} onHide={() => setSelectedItem(null)} size="lg" centered>
                     <Modal.Header closeButton>
-                        <Modal.Title>Xem chi tiết <span className="badge bg-info">{selectedItem.name}</span></Modal.Title>
+                        <Modal.Title>Mua ngay <span className="badge bg-info">{selectedItem.name}</span></Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <div className="row">

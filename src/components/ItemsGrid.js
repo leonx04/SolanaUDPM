@@ -83,15 +83,15 @@ const ItemsGrid = ({ referenceId, isOwnProfile, loggedInUserId }) => {
 
     const fetchItems = useCallback(async () => {
         setLoading(true);
-
         try {
             let url = `https://api.gameshift.dev/nx/items`;
             const params = new URLSearchParams();
-
             if (referenceId) {
                 params.append('ownerReferenceId', referenceId);
             }
-
+            if (searchTerm) {
+                params.append('searchTerm', searchTerm);
+            }
             if (!isOwnProfile) {
                 switch (marketFilter) {
                     case 'forSale':
@@ -104,31 +104,27 @@ const ItemsGrid = ({ referenceId, isOwnProfile, loggedInUserId }) => {
                         break;
                 }
             }
-
             params.append('limit', itemsPerPage.toString());
-
             url += `?${params.toString()}`;
-
             const response = await fetch(url, {
                 headers: {
                     'accept': 'application/json',
                     'x-api-key': apiKey
                 }
             });
-
             if (!response.ok) {
                 throw new Error('Không thể tải danh sách items');
             }
-
             const data = await response.json();
             setItems(data.data || []);
-
-        } catch (err) {
+        }
+        catch (err) {
             console.error('Lỗi khi tải items:', err.message);
-        } finally {
+        }
+        finally {
             setLoading(false);
         }
-    }, [referenceId, marketFilter, itemsPerPage, isOwnProfile]);
+    }, [referenceId, marketFilter, itemsPerPage, isOwnProfile, searchTerm]);
 
     const handleListForSale = async () => {
         if (!selectedItem || !listingPrice) {
@@ -294,26 +290,22 @@ const ItemsGrid = ({ referenceId, isOwnProfile, loggedInUserId }) => {
 
     useEffect(() => {
         fetchItems();
+        const intervalId = setInterval(fetchItems, 30000); // Fetch every 30 seconds
+        return () => clearInterval(intervalId);
     }, [fetchItems]);
 
-    useEffect(() => {
-        const pollInterval = setInterval(() => {
-            fetchItems();
-        }, 10000);
-
-        return () => clearInterval(pollInterval);
-    }, [fetchItems]);
 
     const filteredItems = useMemo(() => {
         return items.filter(itemData => {
             const item = itemData.item;
             return itemData.type === 'UniqueAsset' &&
-                   (isOwnProfile || (item.price && parseFloat(item.price.naturalAmount) > 0)) &&
-                   (marketFilter === 'all' ||
+                (isOwnProfile || (item.price && parseFloat(item.price.naturalAmount) > 0)) &&
+                (marketFilter === 'all' ||
                     (marketFilter === 'forSale' && item.status === 'Committed') ||
-                    (marketFilter === 'notForSale' && item.status !== 'Committed'));
+                    (marketFilter === 'notForSale' && item.status !== 'Committed')) &&
+                (!searchTerm || item.name.toLowerCase().includes(searchTerm.toLowerCase()));
         });
-    }, [items, marketFilter, isOwnProfile]);
+    }, [items, marketFilter, isOwnProfile, searchTerm]);
 
     const handleBuyItem = (item) => {
         setSelectedItem(item);
@@ -463,7 +455,7 @@ const ItemsGrid = ({ referenceId, isOwnProfile, loggedInUserId }) => {
                                                     onClick={() => handleBuyItem(item)}
                                                     className="rounded-pill"
                                                 >
-                                                    Xem thêm
+                                                    Mua ngay
                                                 </Button>
                                             )
                                         )}
@@ -662,7 +654,7 @@ const ItemsGrid = ({ referenceId, isOwnProfile, loggedInUserId }) => {
 
             <Modal show={showBuyModal} onHide={() => setShowBuyModal(false)} size="lg" centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>Xem chi tiết <span className="badge bg-info">{selectedItem?.name}</span></Modal.Title>
+                    <Modal.Title>Mua ngay <span className="badge bg-info">{selectedItem?.name}</span></Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <div className="row">

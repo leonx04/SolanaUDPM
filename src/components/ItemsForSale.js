@@ -1,3 +1,4 @@
+import { debounce } from 'lodash';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Modal, Spinner } from 'react-bootstrap';
 import { apiKey } from '../api';
@@ -26,6 +27,7 @@ const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [buyError, setBuyError] = useState(null);
     const [buyLoading, setBuyLoading] = useState(false);
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
     const CLOUDINARY_UPLOAD_PRESET = 'ARTSOLANA';
     const CLOUDINARY_CLOUD_NAME = 'dy3nmkszo';
@@ -299,21 +301,37 @@ const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
     useEffect(() => {
         const pollInterval = setInterval(() => {
             fetchItems();
-        }, 10000);
+        }, 30000); // Increase polling interval to 30 seconds
 
         return () => clearInterval(pollInterval);
     }, [fetchItems]);
 
+    const debouncedSearch = useMemo(
+        () => debounce((value) => setDebouncedSearchTerm(value), 300),
+        []
+    );
+
+    useEffect(() => {
+        debouncedSearch(searchTerm);
+        return () => {
+            debouncedSearch.cancel();
+        };
+    }, [searchTerm, debouncedSearch]);
+
     const filteredItems = useMemo(() => {
         return items.filter(itemData => {
             const item = itemData.item;
+            const matchesSearch = debouncedSearchTerm.trim() === '' ||
+                (item.name && item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+                (item.description && item.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
             return itemData.type === 'UniqueAsset' &&
-                   (isOwnProfile || (item.price && parseFloat(item.price.naturalAmount) > 0)) &&
-                   (marketFilter === 'all' ||
+                (isOwnProfile || (item.price && parseFloat(item.price.naturalAmount) > 0)) &&
+                (marketFilter === 'all' ||
                     (marketFilter === 'forSale' && item.status === 'Committed') ||
-                    (marketFilter === 'notForSale' && item.status !== 'Committed'));
+                    (marketFilter === 'notForSale' && item.status !== 'Committed')) &&
+                matchesSearch;
         });
-    }, [items, marketFilter, isOwnProfile]);
+    }, [items, marketFilter, isOwnProfile, debouncedSearchTerm]);
 
     const handleBuyItem = (item) => {
         setSelectedItem(item);
@@ -463,7 +481,7 @@ const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
                                                     onClick={() => handleBuyItem(item)}
                                                     className="rounded-pill"
                                                 >
-                                                    Xem thêm
+                                                    Mua ngay
                                                 </Button>
                                             )
                                         )}
@@ -662,7 +680,7 @@ const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
 
             <Modal show={showBuyModal} onHide={() => setShowBuyModal(false)} size="lg" centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>Xem chi tiết <span className="badge bg-info">{selectedItem?.name}</span></Modal.Title>
+                    <Modal.Title>Mua ngay <span className="badge bg-info">{selectedItem?.name}</span></Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <div className="row">
@@ -737,3 +755,4 @@ const ItemsForSale = ({ referenceId, isOwnProfile, loggedInUserId }) => {
 };
 
 export default ItemsForSale;
+

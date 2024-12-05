@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useReducer, useRef } from 'react';
-import { Alert, Button, Card, Carousel, Spinner, OverlayTrigger, Tooltip, Modal, Container, Row, Col } from 'react-bootstrap';
+import axios from 'axios';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { Alert, Button, Card, Carousel, Col, Container, Modal, OverlayTrigger, Row, Spinner, Tooltip } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { apiKey } from '../api';
-import axios from 'axios';
 import FeaturedUsers from './FeaturedUsers';
 
 // Action types for reducer
@@ -14,6 +14,7 @@ const ACTIONS = {
   CLEAR_SELECTED_ITEM: 'CLEAR_SELECTED_ITEM',
   SET_BUY_LOADING: 'SET_BUY_LOADING',
   SET_BUY_ERROR: 'SET_BUY_ERROR',
+  SET_BUY_SUCCESS: 'SET_BUY_SUCCESS',
   SET_FEATURED_ITEMS: 'SET_FEATURED_ITEMS',
 };
 
@@ -34,6 +35,8 @@ const reducer = (state, action) => {
       return { ...state, buyLoading: action.payload };
     case ACTIONS.SET_BUY_ERROR:
       return { ...state, buyError: action.payload };
+    case ACTIONS.SET_BUY_SUCCESS:
+      return { ...state, buySuccess: action.payload };
     case ACTIONS.SET_FEATURED_ITEMS:
       return { ...state, featuredItems: action.payload };
     default:
@@ -55,12 +58,18 @@ const MarketplaceHome = ({ referenceId }) => {
     selectedItem: null,
     buyLoading: false,
     buyError: null,
+    buySuccess: null,
     lastFetchTime: Date.now(),
   });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const productSectionRef = useRef(null);
 
   const fetchAllItems = useCallback(async (signal) => {
+    if (isModalOpen || isRedirecting) return;
+
     dispatch({ type: ACTIONS.FETCH_START });
 
     try {
@@ -127,7 +136,7 @@ const MarketplaceHome = ({ referenceId }) => {
         console.error('Fetch error:', err);
       }
     }
-  }, [referenceId]);
+  }, [referenceId, isModalOpen, isRedirecting]);
 
   const handlePeriodicRefresh = useCallback(async () => {
     const controller = new AbortController();
@@ -155,12 +164,14 @@ const MarketplaceHome = ({ referenceId }) => {
     } else {
       dispatch({ type: ACTIONS.SET_SELECTED_ITEM, payload: itemData.item });
       dispatch({ type: ACTIONS.SET_BUY_ERROR, payload: null });
+      setIsModalOpen(true);
     }
   };
 
   const buyItemWithPhantomWallet = async () => {
     dispatch({ type: ACTIONS.SET_BUY_LOADING, payload: true });
     dispatch({ type: ACTIONS.SET_BUY_ERROR, payload: null });
+    dispatch({ type: ACTIONS.SET_BUY_SUCCESS, payload: null });
 
     try {
       const provider = window.phantom?.solana;
@@ -187,8 +198,12 @@ const MarketplaceHome = ({ referenceId }) => {
       );
 
       const { consentUrl } = response.data;
+      setIsRedirecting(true);
       window.open(consentUrl, '_blank');
+      
+      setIsRedirecting(false);
       fetchAllItems();
+
     } catch (err) {
       console.error('Lỗi mua sản phẩm:', err);
 
@@ -197,6 +212,7 @@ const MarketplaceHome = ({ referenceId }) => {
         'Không thể thực hiện giao dịch. Vui lòng thử lại.';
 
       dispatch({ type: ACTIONS.SET_BUY_ERROR, payload: errorMessage });
+      setIsRedirecting(false);
     } finally {
       dispatch({ type: ACTIONS.SET_BUY_LOADING, payload: false });
     }
@@ -280,7 +296,7 @@ const MarketplaceHome = ({ referenceId }) => {
                       className="rounded-pill"
                       disabled={isOwnItem}
                     >
-                      {isOwnItem ? 'Sản phẩm của bạn' : 'Xem chi tiết'}
+                      {isOwnItem ? 'Sản phẩm của bạn' : 'Mua ngay'}
                     </Button>
                   </div>
                 </Card.Body>
@@ -360,8 +376,6 @@ const MarketplaceHome = ({ referenceId }) => {
         <FeaturedUsers />
       </div>
 
-
-
       <section className="benefits-section py-5">
         <div className="container">
           <h2 className="text-center fw-bold mb-5">Lợi ích của NFT Marketplace</h2>
@@ -385,7 +399,6 @@ const MarketplaceHome = ({ referenceId }) => {
           </div>
         </div>
       </section>
-
 
       <div className="container mb-5" ref={productSectionRef}>
         <h2 className="text-center fw-bold mb-4">Sản phẩm nổi bật</h2>
@@ -419,11 +432,18 @@ const MarketplaceHome = ({ referenceId }) => {
         </div>
       </section>
 
-
       {state.selectedItem && (
-        <Modal show={!!state.selectedItem} onHide={() => dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM })} size="lg" centered>
+        <Modal 
+          show={isModalOpen} 
+          onHide={() => {
+            setIsModalOpen(false);
+            dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM });
+          }} 
+          size="lg" 
+          centered
+        >
           <Modal.Header closeButton>
-            <Modal.Title>Xem chi tiết <span className="badge bg-info">{state.selectedItem.name}</span></Modal.Title>
+            <Modal.Title>Mua ngay <span className="badge bg-info">{state.selectedItem.name}</span></Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <div className="row">
@@ -463,19 +483,28 @@ const MarketplaceHome = ({ referenceId }) => {
                     {state.buyError}
                   </Alert>
                 )}
+
+                {state.buySuccess && (
+                  <Alert variant="success" className="mt-3">
+                    {state.buySuccess}
+                  </Alert>
+                )}
               </div>
             </div>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM })}>
+            <Button variant="secondary" onClick={() => {
+              setIsModalOpen(false);
+              dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM });
+            }}>
               Hủy
             </Button>
             <Button
               variant="primary"
               onClick={buyItemWithPhantomWallet}
-              disabled={state.buyLoading || state.selectedItem.owner.referenceId === referenceId}
+              disabled={state.buyLoading || state.selectedItem.owner.referenceId === referenceId || isRedirecting}
             >
-              {state.buyLoading ? (
+              {state.buyLoading || isRedirecting ? (
                 <>
                   <Spinner
                     as="span"
@@ -485,7 +514,7 @@ const MarketplaceHome = ({ referenceId }) => {
                     aria-hidden="true"
                     className="me-2"
                   />
-                  Đang xử lý...
+                  {isRedirecting ? 'Đang chuyển hướng...' : 'Đang xử lý...'}
                 </>
               ) : state.selectedItem.owner.referenceId === referenceId ? (
                 'Sản phẩm của bạn'
