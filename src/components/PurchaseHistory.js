@@ -64,25 +64,6 @@ const PurchaseHistory = ({ referenceId }) => {
     lastFetchTime: Date.now(),
   });
 
-  const applyFiltersAndSearch = useCallback((purchases) => {
-    let result = purchases;
-
-    if (state.statusFilter !== 'Tất cả') {
-      result = result.filter(purchase => purchase.status === state.statusFilter);
-    }
-
-    if (state.searchTerm) {
-      result = result.filter(purchase =>
-        purchase.sku.item.name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
-        purchase.sku.item.description.toLowerCase().includes(state.searchTerm.toLowerCase())
-      );
-    }
-
-    dispatch({ type: ACTIONS.SET_FILTERED_PURCHASES, payload: result });
-    dispatch({ type: ACTIONS.SET_CURRENT_PAGE, payload: 1 });
-  }, [state.statusFilter, state.searchTerm]);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchPurchaseHistory = useCallback(async (signal) => {
     dispatch({ type: ACTIONS.FETCH_START });
 
@@ -113,7 +94,25 @@ const PurchaseHistory = ({ referenceId }) => {
         console.error('Fetch error:', err);
       }
     }
-  }, [referenceId, applyFiltersAndSearch]);
+  }, [referenceId]);
+
+  const applyFiltersAndSearch = useCallback((purchases) => {
+    let result = purchases;
+
+    if (state.statusFilter !== 'Tất cả') {
+      result = result.filter(purchase => purchase.status === state.statusFilter);
+    }
+
+    if (state.searchTerm) {
+      result = result.filter(purchase =>
+        purchase.sku.item.name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
+        purchase.sku.item.description.toLowerCase().includes(state.searchTerm.toLowerCase())
+      );
+    }
+
+    dispatch({ type: ACTIONS.SET_FILTERED_PURCHASES, payload: result });
+    dispatch({ type: ACTIONS.SET_CURRENT_PAGE, payload: 1 });
+  }, [state.statusFilter, state.searchTerm]);
 
   useEffect(() => {
     if (referenceId) {
