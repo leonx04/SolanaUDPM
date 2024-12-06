@@ -200,7 +200,7 @@ const MarketplaceHome = ({ referenceId }) => {
       const { consentUrl } = response.data;
       setIsRedirecting(true);
       window.open(consentUrl, '_blank');
-      
+
       setIsRedirecting(false);
       fetchAllItems();
 
@@ -324,7 +324,7 @@ const MarketplaceHome = ({ referenceId }) => {
           <Carousel.Item>
             <img
               className="d-block w-100"
-              src="https://static.vecteezy.com/system/resources/previews/017/797/790/non_2x/banner-for-nft-industry-one-point-perspective-concept-with-terms-of-web3-vector.jpg"
+              src="https://i.pinimg.com/originals/a0/6e/95/a06e951759316c0f6fa926fcaf923888.gif"
               alt="Bộ sưu tập NFT"
             />
             <Carousel.Caption>
@@ -335,7 +335,7 @@ const MarketplaceHome = ({ referenceId }) => {
           <Carousel.Item>
             <img
               className="d-block w-100"
-              src="https://static.vecteezy.com/system/resources/previews/023/325/782/non_2x/futuristic-digital-technology-metaverse-nft-virtual-reality-concept-young-girl-wearing-vr-virtual-reality-goggle-experiencing-virtual-world-glitch-effect-vector.jpg"
+              src="https://i.pinimg.com/originals/5f/f4/58/5ff45883d083027e28142ce6fc48659d.gif"
               alt="Trải nghiệm mua bán NFT"
             />
             <Carousel.Caption>
@@ -433,13 +433,13 @@ const MarketplaceHome = ({ referenceId }) => {
       </section>
 
       {state.selectedItem && (
-        <Modal 
-          show={isModalOpen} 
+        <Modal
+          show={isModalOpen}
           onHide={() => {
             setIsModalOpen(false);
             dispatch({ type: ACTIONS.CLEAR_SELECTED_ITEM });
-          }} 
-          size="lg" 
+          }}
+          size="lg"
           centered
         >
           <Modal.Header closeButton>
